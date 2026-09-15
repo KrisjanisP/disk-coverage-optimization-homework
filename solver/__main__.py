@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
+from solver.exact import solve_ilp
 from solver.instance import load_instance
 from solver.plots import save_cost_figures, save_placement_figure, save_placement_houses_figure, write_trace_csv
 from solver.search import naive_multistart, tabu_search
@@ -22,6 +23,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     p.add_argument("--seed", type=int, default=2026)
     p.add_argument("--json-out", type=Path, default=None)
     p.add_argument("--figure-dir", type=Path, default=None)
+    p.add_argument("--exact", action="store_true", help="also solve the candidate ILP (comparison, not the search)")
     return p.parse_args(argv)
 
 
@@ -74,6 +76,29 @@ def main(argv: list[str] | None = None) -> int:
         "naive_hc": _result_dict(hc),
         "tabu": _result_dict(ts),
     }
+    fig_dir = args.figure_dir
+    if args.exact:
+        opt_chosen, opt_uncovered, extra = solve_ilp(model)
+        payload["ilp"] = {
+            "covered": inst.n_houses - opt_uncovered,
+            "uncovered": opt_uncovered,
+            "chosen": [int(x) for x in opt_chosen],
+            "extra": extra,
+        }
+        print(
+            f"ILP       covered={inst.n_houses - opt_uncovered}/{inst.n_houses}  "
+            f"{extra['seconds']:.2f}s  {extra['message']}",
+            file=sys.stderr,
+        )
+        opt_fig = save_placement_figure(model, opt_chosen, fig_dir, filename="placement-opt.pdf")
+        print(f"wrote {opt_fig}", file=sys.stderr)
+        raw_path = args.instance.with_name(args.instance.stem + "_raw.npy")
+        if raw_path.is_file():
+            houses_xy = np.load(raw_path)
+            opt_h = save_placement_houses_figure(
+                model, opt_chosen, houses_xy, fig_dir, filename="placement-opt-houses.pdf"
+            )
+            print(f"wrote {opt_h}", file=sys.stderr)
     text = json.dumps(payload, indent=2)
     print(text)
     if args.json_out is not None:
@@ -81,7 +106,6 @@ def main(argv: list[str] | None = None) -> int:
         args.json_out.write_text(text + "\n", encoding="utf-8")
         write_trace_csv(hc, args.json_out.with_name("cost_trace_hc.csv"))
         write_trace_csv(ts, args.json_out.with_name("cost_trace_tabu.csv"))
-    fig_dir = args.figure_dir
     current_fig, best_fig = save_cost_figures(hc, ts, fig_dir)
     place_fig = save_placement_figure(model, ts.chosen, fig_dir)
     print(f"wrote {current_fig}", file=sys.stderr)

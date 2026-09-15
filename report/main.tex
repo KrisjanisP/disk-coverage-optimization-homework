@@ -137,7 +137,12 @@ Naive hill-climbing is the same neighbourhood with no memory and with random res
 Both methods received $60$\,s on the $N=10\,000$, $K=12$ map ($120$ distinct cells, $557$ candidate centres).
 Naive multi-start hill-climbing covered $9413$ houses after $102$ local minima.
 Tabu search covered $9445$ houses after $11$ restarts.
-Fig.~\ref{fig:placement} is that tabu placement on the integer house grid.
+An integer program on the same $557$ candidates is optimal at $9451$ houses ($0.7$\,s, HiGHS).
+The $60$\,s tabu packing is six houses short and Hamming distance $11$ from that optimum; it is a local minimum under both $1$-swaps and $2$-swaps.
+A $180$\,s tabu run reached $9447$.
+Continuing tabu from the $9445$ basin without restarts did not reach the optimum.
+The sparse hinterland in Fig.~\ref{fig:placement-houses} is not a search failure: the optimum also leaves $549$ houses uncovered.
+Fig.~\ref{fig:placement} is the $60$\,s tabu placement on the integer house grid.
 Fig.~\ref{fig:placement-houses} shows the same disks on the original $10\,000$ sampled houses, before rounding.
 Filled markers in Fig.~\ref{fig:placement} are covered cells (area scales with household count); open markers are uncovered.
 White dots mark the chosen centres.

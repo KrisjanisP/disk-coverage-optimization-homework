@@ -92,3 +92,13 @@ def test_placement_houses_figure_writes():
         path = save_placement_houses_figure(model, res.chosen, inst.xy, Path(td))
         assert path.is_file()
         assert path.stat().st_size > 0
+
+
+def test_ilp_covers_the_pair():
+    from solver.exact import solve_ilp
+
+    model, inst = _tiny()
+    chosen, uncovered, extra = solve_ilp(model, time_limit=5.0)
+    assert extra["success"]
+    assert inst.n_houses - uncovered == 2
+    assert len(chosen) == inst.k
