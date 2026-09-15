@@ -14,7 +14,7 @@ from solver.state import Model, make_state
 
 def _tiny() -> tuple[Model, Instance]:
     xy = np.array([[0.0, 0.0], [0.0, 1.0], [10.0, 0.0]])
-    inst = Instance(xy=xy, weights=np.array([1, 1, 1], dtype=np.int64), k=1, n_houses=3)
+    inst = Instance(xy=xy, weights=np.array([1, 1, 1], dtype=np.int64), k=1, n_houses=3, radius=1.0)
     centres = candidate_centres(inst)
     model = Model(inst=inst, centres=centres, covered=coverage_lists(centres, inst))
     return model, inst

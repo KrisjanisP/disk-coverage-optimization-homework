@@ -179,12 +179,20 @@ def tabu_search(
     rng: np.random.Generator,
     seconds: float,
     tenure: int,
-    idle_restart: int = 40,
+    idle_restart: int = 20,
     rcl: int = 4,
+    sample: int = 2500,
 ) -> SearchResult:
-    """Best-admissible-move tabu search (Glover), restarted from randomized greedy."""
+    """Best-admissible-move tabu search (Glover), restarted from randomized greedy.
+
+    Each step scans every slot against ``sample`` unused candidates (full scan if
+    fewer remain). Full enumeration of an 10^4-candidate set is too slow for a
+    one-minute budget.
+    """
     if tenure < 1:
         raise ValueError("tabu tenure must be >= 1")
+    if sample < 1:
+        raise ValueError("neighbourhood sample must be >= 1")
     t0 = time.perf_counter()
     deadline = t0 + seconds
     trace = CostTrace(t0)
@@ -195,7 +203,7 @@ def tabu_search(
     restarts = 0
     tabu_steps = 0
     while time.perf_counter() < deadline:
-        start = greedy_start(model, rng=rng, rcl=rcl)
+        start = random_start(model, rng)
         state = make_state(model, start)
         restarts += 1
         trace.record(state.uncovered, force=True)
@@ -207,6 +215,11 @@ def tabu_search(
         idle = 0
         while time.perf_counter() < deadline:
             occupied = set(int(x) for x in state.chosen)
+            free = [i for i in range(model.n_cand) if i not in occupied]
+            if len(free) > sample:
+                trial = rng.choice(np.asarray(free, dtype=np.int32), size=sample, replace=False)
+            else:
+                trial = free
             found = False
             best_slot = -1
             best_new = -1
@@ -217,7 +230,10 @@ def tabu_search(
                     break
                 slot = int(slot)
                 old = int(state.chosen[slot])
-                for new_idx in range(model.n_cand):
+                for new_idx in trial:
+                    if time.perf_counter() >= deadline:
+                        break
+                    new_idx = int(new_idx)
                     if new_idx in occupied:
                         continue
                     apply_swap(model, state, slot, new_idx)
@@ -262,8 +278,9 @@ def tabu_search(
         extra={
             "tenure": tenure,
             "tabu_steps": tabu_steps,
-            "init": f"randomized_greedy_rcl{rcl}",
+            "init": "random",
             "idle_restart": idle_restart,
+            "sample": sample,
             "trace_points": len(trace.t),
         },
         trace_t=trace.t,

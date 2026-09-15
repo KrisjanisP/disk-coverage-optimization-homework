@@ -41,7 +41,14 @@ def solve_ilp(model: Model, time_limit: float = 60.0) -> tuple[np.ndarray, int, 
     )
     elapsed = time.perf_counter() - t0
     if res.x is None:
-        raise RuntimeError(f"ILP failed: status={res.status} {res.message}")
+        extra = {
+            "success": False,
+            "status": int(res.status),
+            "message": str(res.message),
+            "seconds": elapsed,
+            "obj": None if res.fun is None else float(-res.fun),
+        }
+        return np.zeros(0, dtype=np.int32), model.inst.n_houses, extra
     chosen = np.flatnonzero(res.x[:n_c] > 0.5).astype(np.int32)
     state = make_state(model, chosen)
     extra = {

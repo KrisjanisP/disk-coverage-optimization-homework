@@ -16,7 +16,7 @@ from solver.state import Model
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Cover houses with K unit disks")
+    p = argparse.ArgumentParser(description="Cover houses with K disks of radius R")
     p.add_argument("--instance", type=Path, required=True)
     p.add_argument("--seconds", type=float, default=60.0, help="wall time per method")
     p.add_argument("--tenure", type=int, default=12, help="tabu tenure")
@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     covered = coverage_lists(centres, inst)
     model = Model(inst=inst, centres=centres, covered=covered)
     print(
-        f"N={inst.n_houses} unique={inst.n_unique} K={inst.k} candidates={model.n_cand}",
+        f"N={inst.n_houses} unique={inst.n_unique} K={inst.k} R={inst.radius:g} candidates={model.n_cand}",
         file=sys.stderr,
     )
     rng_hc = np.random.default_rng(args.seed)
@@ -70,6 +70,7 @@ def main(argv: list[str] | None = None) -> int:
         "n_houses": inst.n_houses,
         "n_unique": inst.n_unique,
         "k": inst.k,
+        "radius": inst.radius,
         "n_candidates": model.n_cand,
         "seconds": args.seconds,
         "seed": args.seed,
@@ -87,18 +88,19 @@ def main(argv: list[str] | None = None) -> int:
         }
         print(
             f"ILP       covered={inst.n_houses - opt_uncovered}/{inst.n_houses}  "
-            f"{extra['seconds']:.2f}s  {extra['message']}",
+            f"{extra['seconds']:.2f}s  success={extra['success']}  {extra['message']}",
             file=sys.stderr,
         )
-        opt_fig = save_placement_figure(model, opt_chosen, fig_dir, filename="placement-opt.pdf")
-        print(f"wrote {opt_fig}", file=sys.stderr)
-        raw_path = args.instance.with_name(args.instance.stem + "_raw.npy")
-        if raw_path.is_file():
-            houses_xy = np.load(raw_path)
-            opt_h = save_placement_houses_figure(
-                model, opt_chosen, houses_xy, fig_dir, filename="placement-opt-houses.pdf"
-            )
-            print(f"wrote {opt_h}", file=sys.stderr)
+        if extra["success"] and len(opt_chosen) == inst.k:
+            opt_fig = save_placement_figure(model, opt_chosen, fig_dir, filename="placement-opt.pdf")
+            print(f"wrote {opt_fig}", file=sys.stderr)
+            raw_path = args.instance.with_name(args.instance.stem + "_raw.npy")
+            if raw_path.is_file():
+                houses_xy = np.load(raw_path)
+                opt_h = save_placement_houses_figure(
+                    model, opt_chosen, houses_xy, fig_dir, filename="placement-opt-houses.pdf"
+                )
+                print(f"wrote {opt_h}", file=sys.stderr)
     text = json.dumps(payload, indent=2)
     print(text)
     if args.json_out is not None:
