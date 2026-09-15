@@ -18,7 +18,7 @@ from solver.state import Model
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Cover houses with K disks of radius R")
     p.add_argument("--instance", type=Path, required=True)
-    p.add_argument("--seconds", type=float, default=60.0, help="wall time per method")
+    p.add_argument("--seconds", type=float, default=120.0, help="wall time per method")
     p.add_argument("--tenure", type=int, default=12, help="tabu tenure")
     p.add_argument("--seed", type=int, default=2026)
     p.add_argument("--json-out", type=Path, default=None)
