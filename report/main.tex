@@ -1,0 +1,107 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{url}
+
+\begin{document}
+
+\title{Placing $K$ Unit Disks to Cover the Most Households}
+
+\author{
+\IEEEauthorblockN{Kri\v{s}j\={a}nis Petru\v{c}e\c{n}a}
+\IEEEauthorblockA{University of Latvia}
+}
+
+\maketitle
+
+\begin{abstract}
+We study the placement of $K$ disks of radius one so as to cover as many as possible of $N$ given points in the plane.
+The points are households.
+Each disk is a cellular tower with a fixed range.
+The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$, or $O(N^3)$ if every triple of points is used to form a smallest enclosing disk.
+This note records the problem and a first clustered benchmark: eight city impulses on a grid, a Gaussian blur, and $10\,000$ houses sampled from the resulting density.
+\end{abstract}
+
+\begin{IEEEkeywords}
+unit disk coverage, facility location, local search, synthetic spatial data
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+A cellular operator may install only $K$ towers.
+Each tower covers every household within distance one.
+The operator wants to cover as many households as possible.
+
+That story is the maximum-coverage problem with $K$ unit disks.
+The input is a list of $N$ points with integer coordinates and a budget $K\in\mathbb{N}$.
+A feasible solution is a list of $K$ centres in $\mathbb{R}^2$.
+A point $p$ is covered if some centre $c$ satisfies $\|p-c\|_2\le 1$.
+The objective is the number of covered points.
+
+Deciding whether $K$ equal disks can cover a given point set is NP-complete~\cite{Megiddo1984}.
+Covering \emph{every} point with as few equal disks as possible admits a PTAS via the shifting strategy~\cite{Hochbaum1985}.
+The budgeted variant studied here is at least as hard as that decision problem: the yes-instances are exactly those for which the maximum coverage equals $N$.
+
+\section{A discrete candidate set}
+
+An optimal centre can always be moved until the covered set is unchanged and the disk is a smallest enclosing disk of that set.
+A smallest enclosing disk is determined by one point (the centre at that point), by two points (the centre at their midpoint, if they lie at distance at most two), or by three points on the boundary.
+Enumerating those disks and keeping those of radius at most one yields $O(N^3)$ candidate centres.
+
+A strictly smaller equivalent set has size $O(N^2)$.
+For every pair of points at Euclidean distance at most two there are at most two unit disks whose boundary passes through both points.
+Those centres, together with the input points themselves, contain an optimal placement.
+The search problem is therefore combinatorial: choose $K$ candidates.
+
+\section{Benchmark instance}
+
+Uniform random points would not look like a map.
+Households concentrate in cities and thin out between them.
+We therefore build a population density and sample houses from it.
+
+Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, with a minimum separation so that the cities do not collapse into one blob.
+Convolve the impulses with a Gaussian of $\sigma=20$ pixels.
+The result is the grayscale density in Fig.~\ref{fig:density}.
+Sample $N=10\,000$ pixel locations with replacement from that density, add unit-square jitter inside each pixel, and scale the coordinates onto a square of side $40$.
+Fig.~\ref{fig:houses} shows the sampled houses before rounding.
+
+The side length is the unit of the covering radius: a tower covers a neighbourhood, not the whole map and not a single house.
+Cities in this instance span a few units, so one disk covers a core but not an entire city.
+The instance file stores integer coordinates obtained by rounding, together with a default budget $K=12$.
+Rounding maps many houses onto the same grid cell ($593$ distinct cells here).
+Those duplicates are still distinct households: a disk that covers the cell covers every house in it.
+
+Later instances will vary $N$, $C$, and $K$.
+Small instances will be used to compare against an exact solver on the candidate set.
+The $N=10\,000$ map is the large case, where only heuristic quality and running time are available.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/density-map.pdf}
+\caption{Population density from eight blurred city impulses.
+Coordinates are in covering-radius units (a disk has radius $1$).
+Darker ink is higher density.}
+\label{fig:density}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/sampled-houses.pdf}
+\caption{$10\,000$ houses sampled from the density in Fig.~\ref{fig:density}.}
+\label{fig:houses}
+\end{figure}
+
+\section{What remains}
+
+The assignment is to implement a local-search algorithm on this domain, not to call a solver library.
+The remaining sections will record the search domain, the evaluation of a placement, the neighbourhood (moves), the chosen metaheuristic, and timed experiments on several instance sizes.
+
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
