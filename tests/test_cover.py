@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import Instance
+from solver.plots import save_placement_figure
 from solver.search import greedy_start, hill_climb_until_stuck, lahc, naive_multistart, tabu_search
 from solver.state import Model, make_state
 
@@ -68,3 +72,13 @@ def test_hc_trace_is_nonempty():
     assert len(res.trace_t) >= 1
     assert res.trace_best[-1] == res.uncovered
     assert all(a >= b for a, b in zip(res.trace_best, res.trace_best[1:]))
+
+
+def test_placement_figure_writes():
+    model, _inst = _tiny()
+    rng = np.random.default_rng(3)
+    res = tabu_search(model, rng, seconds=0.2, tenure=3)
+    with tempfile.TemporaryDirectory() as td:
+        path = save_placement_figure(model, res.chosen, Path(td))
+        assert path.is_file()
+        assert path.stat().st_size > 0

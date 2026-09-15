@@ -9,7 +9,7 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import load_instance
-from solver.plots import save_cost_figures, write_trace_csv
+from solver.plots import save_cost_figures, save_placement_figure, write_trace_csv
 from solver.search import naive_multistart, tabu_search
 from solver.state import Model
 
@@ -83,8 +83,10 @@ def main(argv: list[str] | None = None) -> int:
         write_trace_csv(ts, args.json_out.with_name("cost_trace_tabu.csv"))
     fig_dir = args.figure_dir
     current_fig, best_fig = save_cost_figures(hc, ts, fig_dir)
+    place_fig = save_placement_figure(model, ts.chosen, fig_dir)
     print(f"wrote {current_fig}", file=sys.stderr)
     print(f"wrote {best_fig}", file=sys.stderr)
+    print(f"wrote {place_fig}", file=sys.stderr)
     return 0
 
 
