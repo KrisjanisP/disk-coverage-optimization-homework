@@ -24,7 +24,7 @@ We study the placement of $K$ disks of radius one so as to cover as many as poss
 The points are households.
 Each disk is a cellular tower with a fixed range.
 The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$, or $O(N^3)$ if every triple of points is used to form a smallest enclosing disk.
-This note records the problem and a first clustered benchmark: eight city impulses on a grid, a Gaussian blur, and $10\,000$ houses sampled from the resulting density.
+This note records the problem, a first clustered benchmark, and the intended solver: greedy construction as the baseline, then late-acceptance hill-climbing.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -96,10 +96,46 @@ Darker ink is higher density.}
 \label{fig:houses}
 \end{figure}
 
-\section{What remains}
+\section{Method}
 
-The assignment is to implement a local-search algorithm on this domain, not to call a solver library.
-The remaining sections will record the search domain, the evaluation of a placement, the neighbourhood (moves), the chosen metaheuristic, and timed experiments on several instance sizes.
+The assignment requires one self-written local-search algorithm, not a solver library.
+We use late-acceptance hill-climbing (LAHC)~\cite{Burke2017}.
+That is the method, not the baseline.
+
+The baseline is the greedy maximum-coverage construction on the candidate centres: $K$ times, place a disk that covers the most still-uncovered houses~\cite{Nemhauser1978}.
+That construction is also \texttt{INITIALIZE} in the lecture meta-algorithm.
+A second, weaker reference is naive hill-climbing on the same neighbourhood (accept a neighbour only if it covers at least as many houses).
+If LAHC cannot beat those two, late acceptance is doing no work.
+
+Quality against the assignment's ``optimum or best known'' is not another metaheuristic.
+On small instances we will compare to an exact optimum over the candidate set.
+On the $N=10\,000$ map the greedy value is the best-known reference until LAHC improves it.
+
+\subsection{Domain}
+
+A solution is a list of $K$ candidate centres, without repetition.
+The candidate set is the $O(N^2)$ unit-disk centres of Section~II.
+
+\subsection{Evaluation}
+
+Cost is the number of uncovered houses, $N$ minus the number of points within distance one of at least one chosen centre.
+Lower is better, matching the lecture's acceptance tests.
+
+\subsection{Move}
+
+A neighbour is obtained by replacing one chosen centre with a different candidate.
+That is a $K$-swap in a set of size $O(N^2)$.
+
+\subsection{Algorithm}
+
+LAHC keeps a history of length $n$ of recent costs~\cite{Burke2017}.
+A candidate neighbour is accepted if it is better than the current solution or better than the cost from $n$ iterations ago.
+We follow the published update (store the cost of the current solution after the accept/reject decision), not the lecture slide that writes the rejected neighbour's cost into the list.
+
+Naive hill-climbing is the same loop with the late-acceptance clause removed.
+We will not implement simulated annealing or tabu search for this practical.
+
+Timed experiments on several $N$ remain to be done.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}

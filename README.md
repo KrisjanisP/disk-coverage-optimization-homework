@@ -53,7 +53,9 @@ AI/LLM use is allowed. You remain responsible for the result.
 
 Problem chosen; not yet confirmed by the lecturer.
 
-Algorithm not chosen yet.
+Algorithm: late-acceptance hill-climbing (LAHC).
+Baseline to compare against: greedy maximum coverage on the discrete candidate set, plus naive hill-climbing on the same neighbourhood.
+Small instances: exact optimum over candidates.
 
 No solver code yet.
 
