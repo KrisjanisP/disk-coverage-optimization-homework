@@ -105,7 +105,7 @@ The assignment requires one self-written local-search algorithm, not a solver li
 Late-acceptance hill-climbing~\cite{Burke2017} did not beat multi-start hill-climbing on this neighbourhood: a short history freezes, and a random-neighbour walk is a weaker climber than a full-pass first-improvement scan.
 We therefore switch to tabu search~\cite{Glover1989}.
 
-The baseline is unchanged: naive first-improvement hill-climbing until a full neighbourhood pass finds no improving move, then a new random $K$-subset, for a one-minute budget.
+The baseline is unchanged: naive first-improvement hill-climbing until a full neighbourhood pass finds no improving move, then a new random $K$-subset, for a two-minute budget.
 Tabu search gets the same wall-clock.
 
 \subsection{Domain}
@@ -126,21 +126,22 @@ That is a $K$-swap in the snapped candidate set.
 \subsection{Algorithm}
 
 Tabu search starts from a random $K$-subset of the snapped candidates.
-Each step then takes the lowest-cost swap among $2500$ randomly sampled unused candidates that is not tabu, or a tabu swap that improves the global best (aspiration).
-The centre just evicted may not return for a tenure of $12$ steps.
-Worsening moves are taken when no improving admissible sampled move exists.
-If the global best is unchanged for $20$ steps, we restart from a new random $K$-subset.
+It first climbs with first-improvement: slots in random order, and on the first slot that has a better centre, the best unused candidate for that slot is taken.
+A sparse candidate-by-house matrix makes that scan cheap (about $7$\,ms for all $11822$ centres).
+From the local minimum, each further step takes the lowest-cost admissible $1$-swap over the whole neighbourhood.
+The centre just evicted may not return for a tenure of $12$ steps, unless the swap beats the global best (aspiration).
+If the global best is unchanged for $80$ tabu steps, we restart from a new random $K$-subset.
 
 Naive hill-climbing is the same neighbourhood with no memory and with random restarts until the time budget expires.
 
 \section{A first timed comparison}
 
-Both methods received $60$\,s on the $N=10\,000$, $K=12$, $R=10$ map ($3148$ distinct cells, $11822$ snapped candidates).
-Naive multi-start hill-climbing covered $9104$ houses after $3$ local minima.
-Tabu search covered $9089$ houses after $75$ sampled best-admissible steps.
-A full $1$-swap neighbourhood has about $1.4\times 10^5$ moves and takes about $4$\,s to scan, so tabu evaluates $2500$ unused candidates per step rather than the whole set.
-On this budget the complete first-improvement scan finds slightly better placements than that sample; the two methods differ by $15$ houses.
-An integer program on the $11822$ candidates did not return a feasible incumbent within $60$\,s, so $9104$ is the best-known value on this run.
+Both methods received $120$\,s on the $N=10\,000$, $K=12$, $R=10$ map ($3148$ distinct cells, $11822$ snapped candidates).
+Naive multi-start hill-climbing covered $9104$ houses after $6$ local minima.
+Tabu search covered $9117$ houses after $197$ restarts ($3715$ climbing steps and $16016$ tabu steps).
+The same neighbourhood evaluated by applying each swap in Python took about $4$\,s per full scan, which is why an earlier sampled tabu lost to the baseline.
+With the sparse evaluation, tabu sees the whole $1$-swap list and still restarts far more often than the naive climber.
+An integer program on the $11822$ candidates did not return a feasible incumbent within $60$\,s, so $9117$ is the best-known value on this run.
 Fig.~\ref{fig:placement} is the tabu placement on the integer houses.
 Fig.~\ref{fig:placement-houses} shows the same disks on all $10\,000$ points.
 Fig.~\ref{fig:cost-current} shows the current cost against wall-clock time.
@@ -150,7 +151,7 @@ Late-acceptance hill-climbing is not competitive on this neighbourhood and is no
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{figures/placement-tabu.pdf}
-\caption{Best tabu-search placement after $60$\,s ($9089$ houses covered).
+\caption{Best tabu-search placement after $120$\,s ($9117$ houses covered).
 Filled markers are covered integer locations (area scales with household count); open markers are uncovered.
 Circles have radius $R=10$.}
 \label{fig:placement}
@@ -177,7 +178,7 @@ Bottom: tabu search.}
 \centering
 \includegraphics[width=\columnwidth]{figures/cost-best.pdf}
 \caption{Best-so-far uncovered count for both methods.
-Hill-climbing ends at $896$ uncovered houses, tabu search at $911$.}
+Hill-climbing ends at $896$ uncovered houses, tabu search at $883$.}
 \label{fig:cost-best}
 \end{figure}
 

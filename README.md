@@ -55,16 +55,16 @@ AI/LLM use is allowed. You remain responsible for the result.
 Problem chosen; not yet confirmed by the lecturer.
 The first email to the lecturer stated radius one; the formulation here uses a general radius \(R\) on a larger integer map.
 
-Algorithm: tabu search (random start, sample 2500 unused candidates per step, tenure 12, restart after 20 idle steps).
-Baseline: naive first-improvement hill-climbing until a local minimum, restarted from random $K$-subsets, same wall-clock (60 s).
+Algorithm: tabu search (random start, first-improvement climb, then full-neighbourhood best-admissible kicks, tenure 12, restart after 80 idle tabu steps).
+Baseline: naive first-improvement hill-climbing until a local minimum, restarted from random $K$-subsets, same wall-clock (120 s).
 LAHC lost to that baseline on an earlier map, so it is not the submitted method.
 
-Solver: `python -m solver --instance data/instances/houses_n10000_k12_r10.txt --seconds 60`.
+Solver: `python -m solver --instance data/instances/houses_n10000_k12_r10.txt --seconds 120`.
 Add `--exact` to also solve the candidate ILP (comparison only; not the submitted method).
 
 The map is the integer square \([0,100]\times[0,100]\) with \(R=10\), \(N=10000\), \(K=12\) ($3148$ distinct cells).
-On a 60 s budget: naive HC covered **9104**/10000 (3 local minima); tabu search covered **9089** (75 sampled steps).
-The ILP on $11822$ snapped candidates hit the time limit without a feasible incumbent, so 9104 is the best-known from this run.
+On a 120 s budget: naive HC covered **9104**/10000 (6 local minima); tabu search covered **9117** (197 restarts).
+The ILP on $11822$ snapped candidates hit a 60 s time limit without a feasible incumbent, so 9117 is the best-known from this run.
 Cost-vs-time plots are in `report/figures/cost-current.pdf` and `cost-best.pdf`.
 Placement: `report/figures/placement-tabu.pdf` and `placement-tabu-houses.pdf`.
 

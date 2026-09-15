@@ -310,7 +310,6 @@ def tabu_search(
     best_chosen: np.ndarray | None = None
     best_uncovered = 10**18
     tabu_until = np.full(model.n_cand, -1, dtype=np.int32)
-    steps = 0
     restarts = 0
     tabu_steps = 0
     climb_steps = 0
@@ -323,7 +322,6 @@ def tabu_search(
             best_chosen = state.chosen.copy()
         n_climb = climb_first_improvement(model, state, rng, deadline, trace)
         climb_steps += n_climb
-        steps += n_climb * model.k * (model.n_cand - model.k)
         best_uncovered, best_chosen = _record_best(state, best_uncovered, best_chosen)
         tabu_until.fill(-1)
         iteration = 0
@@ -332,7 +330,6 @@ def tabu_search(
             trial: np.ndarray | None
             if sample is None:
                 trial = None
-                steps += model.k * (model.n_cand - model.k)
             else:
                 occupied = set(int(x) for x in state.chosen)
                 free = [i for i in range(model.n_cand) if i not in occupied]
@@ -340,7 +337,6 @@ def tabu_search(
                     trial = rng.choice(np.asarray(free, dtype=np.int32), size=sample, replace=False)
                 else:
                     trial = np.asarray(free, dtype=np.int32)
-                steps += model.k * int(trial.shape[0])
             move = best_admissible_swap(model, state, tabu_until, iteration, best_uncovered, trial)
             if move is None:
                 break
@@ -356,7 +352,6 @@ def tabu_search(
                 idle = 0
                 n_climb = climb_first_improvement(model, state, rng, deadline, trace)
                 climb_steps += n_climb
-                steps += n_climb * model.k * (model.n_cand - model.k)
                 best_uncovered, best_chosen = _record_best(state, best_uncovered, best_chosen)
             else:
                 idle += 1
@@ -371,7 +366,7 @@ def tabu_search(
         covered=covered_houses(model, best_state),
         chosen=best_chosen,
         seconds=time.perf_counter() - t0,
-        iterations=steps,
+        iterations=climb_steps + tabu_steps,
         restarts=restarts,
         extra={
             "tenure": tenure,
