@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     ts = tabu_search(model, rng_ts, args.seconds, args.tenure)
     print(
         f"tabu      covered={ts.covered}/{inst.n_houses}  "
-        f"iters={ts.iterations}  {ts.seconds:.1f}s  tenure={args.tenure}",
+        f"restarts={ts.restarts}  iters={ts.iterations}  {ts.seconds:.1f}s  tenure={args.tenure}",
         file=sys.stderr,
     )
     payload = {

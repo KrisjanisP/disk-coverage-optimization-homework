@@ -7,7 +7,7 @@
   "sigma_px": 20.0,
   "min_sep_px": 80.0,
   "world": 10,
-  "rural_mix": 0.0,
+  "rural_mix": 0.12,
   "city_centres_px": [
     [
       393,
@@ -52,11 +52,11 @@
     0.7391992638398867,
     0.6870016333764373
   ],
-  "unique_integer_locations": 62,
+  "unique_integer_locations": 120,
   "bbox": [
-    1,
+    0,
     0,
     10,
-    9
+    10
   ]
 }

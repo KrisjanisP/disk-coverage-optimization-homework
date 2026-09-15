@@ -18,7 +18,7 @@ GRID = 512
 SIGMA_PX = 20.0
 MIN_SEP_PX = 80.0
 WORLD = 10
-RURAL_MIX = 0.0
+RURAL_MIX = 0.12
 
 ROOT = Path(__file__).resolve().parent.parent
 FIGURE_DIR = ROOT / "report" / "figures"

@@ -66,14 +66,16 @@ We therefore build a population density and sample houses from it.
 
 Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, with a minimum separation so that the cities do not collapse into one blob.
 Convolve the impulses with a Gaussian of $\sigma=20$ pixels.
+A uniform floor of $12\%$ of the density mass is mixed in so that some households sit in the hinterland.
 The result is the grayscale density in Fig.~\ref{fig:density}.
 Sample $N=10\,000$ pixel locations with replacement from that density, add unit-square jitter inside each pixel, and scale the coordinates onto a square of side $10$.
 Fig.~\ref{fig:houses} shows the sampled houses before rounding.
 
 The side length is the unit of the covering radius.
 A city blob is about one unit across, so a single disk of radius one covers most of a city rather than only its core.
+The hinterland houses are the ones the extra towers compete for.
 The instance file stores integer coordinates obtained by rounding, together with a default budget $K=12$.
-Rounding maps many houses onto the same grid cell ($62$ distinct cells here).
+Rounding maps many houses onto the same grid cell ($120$ distinct cells here).
 Those duplicates are still distinct households: a disk that covers the cell covers every house in it.
 
 Later instances will vary $N$, $C$, and $K$.
@@ -122,16 +124,20 @@ That is a $K$-swap in a set of size $O(N^2)$.
 
 \subsection{Algorithm}
 
-Tabu search starts from the greedy maximum-coverage construction~\cite{Nemhauser1978}: $K$ times, place a disk on the unused candidate that covers the most still-uncovered houses.
+Tabu search starts from a randomized greedy construction~\cite{Nemhauser1978}: $K$ times, sample among the four unused candidates with the highest residual cover.
 Each step then takes the lowest-cost swap that is not tabu, or a tabu swap that improves the global best (aspiration).
 The centre just evicted may not return for a tenure of $12$ steps.
-Worsening moves are taken when no improving admissible move exists, which is how the search leaves a local minimum without discarding the rest of the placement.
+Worsening moves are taken when no improving admissible move exists.
+If the global best is unchanged for $40$ steps, we restart from a new randomized greedy $K$-subset.
 
 Naive hill-climbing is the same neighbourhood with no memory and with random restarts until the time budget expires.
 
 \section{A first timed comparison}
 
-Results for the side-$10$ map and a $60$\,s budget are filled in after the timed run.
+Both methods received $60$\,s on the $N=10\,000$, $K=12$ map ($120$ distinct cells, $557$ candidate centres).
+Naive multi-start hill-climbing covered $9413$ houses after $103$ local minima.
+Tabu search covered $9445$ houses after $11$ restarts.
+Late-acceptance hill-climbing is not competitive on this neighbourhood and is not the submitted method.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}

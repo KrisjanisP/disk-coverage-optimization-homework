@@ -105,28 +105,28 @@ def naive_multistart(
     )
 
 
-def greedy_start(model: Model) -> np.ndarray:
-    """K times, pick the unused candidate covering the most still-uncovered weight."""
+def greedy_start(model: Model, rng: np.random.Generator | None = None, rcl: int = 1) -> np.ndarray:
+    """K times, pick among the ``rcl`` unused candidates with highest residual cover."""
     chosen: list[int] = []
     counts = np.zeros(model.inst.n_unique, dtype=np.int32)
     weights = model.inst.weights
     for _ in range(model.k):
         occupied = set(chosen)
-        best_c = -1
-        best_gain = -1
+        ranked: list[tuple[int, int]] = []
         for c in range(model.n_cand):
             if c in occupied:
                 continue
             pts = model.covered[c]
-            if pts.size == 0:
-                gain = 0
-            else:
-                gain = int(weights[pts][counts[pts] == 0].sum())
-            if gain > best_gain:
-                best_gain = gain
-                best_c = c
-        if best_c < 0:
-            raise RuntimeError("greedy could not pick a centre")
+            gain = int(weights[pts][counts[pts] == 0].sum()) if pts.size else 0
+            ranked.append((gain, c))
+        ranked.sort(reverse=True)
+        pool = ranked[: max(1, rcl)]
+        if rng is None or len(pool) == 1:
+            best_c = pool[0][1]
+        else:
+            w = np.array([g + 1 for g, _ in pool], dtype=np.float64)
+            w /= w.sum()
+            best_c = pool[int(rng.choice(len(pool), p=w))][1]
         chosen.append(best_c)
         counts[model.covered[best_c]] += 1
     return np.asarray(chosen, dtype=np.int32)
@@ -137,54 +137,73 @@ def tabu_search(
     rng: np.random.Generator,
     seconds: float,
     tenure: int,
+    idle_restart: int = 40,
+    rcl: int = 4,
 ) -> SearchResult:
-    """Best-admissible-move tabu search (Glover). Evicted centres may not return for ``tenure`` steps."""
+    """Best-admissible-move tabu search (Glover), restarted from randomized greedy."""
     if tenure < 1:
         raise ValueError("tabu tenure must be >= 1")
     t0 = time.perf_counter()
     deadline = t0 + seconds
-    state = make_state(model, greedy_start(model))
-    best_chosen = state.chosen.copy()
-    best_uncovered = state.uncovered
+    best_chosen: np.ndarray | None = None
+    best_uncovered = 10**18
     tabu_until = np.full(model.n_cand, -1, dtype=np.int32)
-    iteration = 0
     steps = 0
+    restarts = 0
+    tabu_steps = 0
     while time.perf_counter() < deadline:
-        occupied = set(int(x) for x in state.chosen)
-        best_slot = -1
-        best_new = -1
-        best_old = -1
-        best_cost = 10**18
-        found = False
-        for slot in rng.permutation(model.k):
-            if time.perf_counter() >= deadline:
-                break
-            slot = int(slot)
-            old = int(state.chosen[slot])
-            for new_idx in range(model.n_cand):
-                if new_idx in occupied:
-                    continue
-                apply_swap(model, state, slot, new_idx)
-                steps += 1
-                cost = state.uncovered
-                apply_swap(model, state, slot, old)
-                forbidden = int(tabu_until[new_idx]) > iteration
-                if forbidden and cost >= best_uncovered:
-                    continue
-                if not found or cost < best_cost:
-                    found = True
-                    best_cost = cost
-                    best_slot = slot
-                    best_new = new_idx
-                    best_old = old
-        if not found:
-            break
-        apply_swap(model, state, best_slot, best_new)
-        tabu_until[best_old] = iteration + tenure
-        iteration += 1
+        start = greedy_start(model, rng=rng, rcl=rcl)
+        state = make_state(model, start)
+        restarts += 1
         if state.uncovered < best_uncovered:
             best_uncovered = state.uncovered
             best_chosen = state.chosen.copy()
+        tabu_until.fill(-1)
+        iteration = 0
+        idle = 0
+        while time.perf_counter() < deadline:
+            occupied = set(int(x) for x in state.chosen)
+            found = False
+            best_slot = -1
+            best_new = -1
+            best_old = -1
+            best_cost = 10**18
+            for slot in rng.permutation(model.k):
+                if time.perf_counter() >= deadline:
+                    break
+                slot = int(slot)
+                old = int(state.chosen[slot])
+                for new_idx in range(model.n_cand):
+                    if new_idx in occupied:
+                        continue
+                    apply_swap(model, state, slot, new_idx)
+                    steps += 1
+                    cost = state.uncovered
+                    apply_swap(model, state, slot, old)
+                    forbidden = int(tabu_until[new_idx]) > iteration
+                    if forbidden and cost >= best_uncovered:
+                        continue
+                    if not found or cost < best_cost:
+                        found = True
+                        best_cost = cost
+                        best_slot = slot
+                        best_new = new_idx
+                        best_old = old
+            if not found:
+                break
+            apply_swap(model, state, best_slot, best_new)
+            tabu_until[best_old] = iteration + tenure
+            iteration += 1
+            tabu_steps += 1
+            if state.uncovered < best_uncovered:
+                best_uncovered = state.uncovered
+                best_chosen = state.chosen.copy()
+                idle = 0
+            else:
+                idle += 1
+                if idle >= idle_restart:
+                    break
+    assert best_chosen is not None
     best_state = make_state(model, best_chosen)
     return SearchResult(
         name="tabu_search",
@@ -193,7 +212,8 @@ def tabu_search(
         chosen=best_chosen,
         seconds=time.perf_counter() - t0,
         iterations=steps,
-        extra={"tenure": tenure, "tabu_steps": iteration, "init": "greedy"},
+        restarts=restarts,
+        extra={"tenure": tenure, "tabu_steps": tabu_steps, "init": f"randomized_greedy_rcl{rcl}", "idle_restart": idle_restart},
     )
 
 
