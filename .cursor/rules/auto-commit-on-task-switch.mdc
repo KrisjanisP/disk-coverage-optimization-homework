@@ -1,0 +1,25 @@
+---
+description: Commit and push when the user switches to a different task
+alwaysApply: true
+---
+
+# Land git when the task changes
+
+This is a standing request to commit and push. Do not wait for "please commit".
+
+Before starting work that is a **different task** than the current uncommitted/unpushed changes, land those changes first:
+
+1. `git status`, `git diff`, `git log -5 --oneline` in parallel
+2. Stage the relevant files (not `.env` or secrets)
+3. Commit with a why-focused message via HEREDOC (`git commit -m "$(cat <<'EOF' ... EOF)"`)
+4. `git push -u` if the branch has no upstream; otherwise `git push`
+5. Then do the new task
+
+A "different task" is a new chat, a topic change, or a request that does not continue the uncommitted work (example: uncommitted HTTP-log changes, user asks for a Disk column).
+
+```text
+# BAD: start the new feature on top of unrelated dirty files
+# GOOD: commit+push the old work, then edit for the new request
+```
+
+Do not: empty commits, `--amend` unless the previous commit was yours and unpushed, `--no-verify`, force-push, or commit when the user says not to. If hooks fail, fix and make a new commit.

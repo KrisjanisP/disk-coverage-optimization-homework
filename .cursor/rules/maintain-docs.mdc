@@ -1,0 +1,22 @@
+---
+description: Keep docs/ current when routes, env, or user-visible behavior change
+alwaysApply: true
+---
+
+# Maintain docs/
+
+`docs/` is operational truth. README is a product overview only.
+
+When a change adds or alters a route, env var, Docker flag, or user-visible flow, update the matching file in the same change:
+
+- routes, handlers, URL prefixes → [docs/routes.md](docs/routes.md)
+- env vars, how to run, Docker socket → [docs/running.md](docs/running.md)
+- process layout, proxy, container model → [docs/architecture.md](docs/architecture.md)
+- index links if you add a new docs file → [docs/README.md](docs/README.md)
+
+```text
+# BAD: new POST /admin/workspaces/{id}/restart, docs/routes.md unchanged
+# GOOD: handler and docs/routes.md land together
+```
+
+Do not document unimplemented features. Do not copy operational tables into README.md.
