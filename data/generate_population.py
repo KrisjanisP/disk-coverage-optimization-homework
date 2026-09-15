@@ -17,7 +17,8 @@ K_TOWERS = 12
 GRID = 512
 SIGMA_PX = 20.0
 MIN_SEP_PX = 80.0
-WORLD = 10
+WORLD = 100
+RADIUS = 10.0
 RURAL_MIX = 0.12
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -71,19 +72,30 @@ def sample_houses(density: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 def save_instance(xy: np.ndarray, meta: dict) -> Path:
     INSTANCE_DIR.mkdir(parents=True, exist_ok=True)
     xy_int = np.clip(np.rint(xy), 0, WORLD).astype(int)
-    path = INSTANCE_DIR / f"houses_n{N_HOUSES}_k{K_TOWERS}.txt"
+    path = INSTANCE_DIR / f"houses_n{N_HOUSES}_k{K_TOWERS}_r{int(RADIUS)}.txt"
     header = [
         f"# houses from C={N_CITIES} blurred city impulses",
-        f"# seed={SEED} grid={GRID} sigma_px={SIGMA_PX} world={WORLD}",
+        f"# seed={SEED} grid={GRID} sigma_px={SIGMA_PX} world={WORLD} radius={RADIUS}",
         f"# unique_integer_locations={len(np.unique(xy_int, axis=0))}",
     ]
     with path.open("w", encoding="utf-8") as fh:
         fh.write("\n".join(header) + "\n")
-        fh.write(f"{N_HOUSES} {K_TOWERS}\n")
+        fh.write(f"{N_HOUSES} {K_TOWERS} {RADIUS:g}\n")
         np.savetxt(fh, xy_int, fmt="%d %d")
     meta_path = path.with_suffix(".json")
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    np.save(INSTANCE_DIR / f"houses_n{N_HOUSES}_k{K_TOWERS}_r{int(RADIUS)}_raw.npy", xy)
     return path
+
+
+def _tick_step(world: int) -> int:
+    if world <= 12:
+        return 2
+    if world <= 40:
+        return 5
+    if world <= 120:
+        return 20
+    return 50
 
 
 def style_axes(ax: plt.Axes) -> None:
@@ -92,8 +104,9 @@ def style_axes(ax: plt.Axes) -> None:
     ax.set_aspect("equal")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    ax.set_xticks(range(0, WORLD + 1, 2))
-    ax.set_yticks(range(0, WORLD + 1, 2))
+    step = _tick_step(WORLD)
+    ax.set_xticks(range(0, WORLD + 1, step))
+    ax.set_yticks(range(0, WORLD + 1, step))
 
 
 def save_density_figure(density: np.ndarray) -> Path:
@@ -142,6 +155,7 @@ def main() -> None:
         "sigma_px": SIGMA_PX,
         "min_sep_px": MIN_SEP_PX,
         "world": WORLD,
+        "radius": RADIUS,
         "rural_mix": RURAL_MIX,
         "city_centres_px": centres.tolist(),
         "city_weights": weights.tolist(),
@@ -150,7 +164,7 @@ def main() -> None:
     }
     inst = save_instance(xy, meta)
     dens_fig = save_density_figure(density)
-    pts_fig = save_points_figure(xy)
+    pts_fig = save_points_figure(xy_int)
     print(f"instance {inst} unique_cells={unique}")
     print(f"wrote {dens_fig}")
     print(f"wrote {pts_fig}")

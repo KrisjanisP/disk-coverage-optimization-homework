@@ -1,1 +1,1 @@
-"""Maximum coverage with K unit disks: LAHC versus multi-start naive hill-climbing."""
+"""Maximum coverage with K disks of radius R."""

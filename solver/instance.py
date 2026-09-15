@@ -14,6 +14,7 @@ class Instance:
     weights: np.ndarray
     k: int
     n_houses: int
+    radius: float
 
     @property
     def n_unique(self) -> int:
@@ -26,6 +27,7 @@ def load_instance(path: Path | str) -> Instance:
     ys: list[int] = []
     n_declared: int | None = None
     k = 1
+    radius = 1.0
     with path.open(encoding="utf-8") as fh:
         for line in fh:
             line = line.strip()
@@ -34,9 +36,13 @@ def load_instance(path: Path | str) -> Instance:
             parts = line.split()
             if n_declared is None:
                 if len(parts) < 2:
-                    raise ValueError(f"{path}: first data line must be 'N K'")
+                    raise ValueError(f"{path}: first data line must be 'N K' or 'N K R'")
                 n_declared = int(parts[0])
                 k = int(parts[1])
+                if len(parts) >= 3:
+                    radius = float(parts[2])
+                if radius <= 0:
+                    raise ValueError(f"{path}: radius R must be positive")
                 continue
             xs.append(int(parts[0]))
             ys.append(int(parts[1]))
@@ -51,4 +57,5 @@ def load_instance(path: Path | str) -> Instance:
         weights=weights.astype(np.int64),
         k=k,
         n_houses=int(n_declared),
+        radius=float(radius),
     )

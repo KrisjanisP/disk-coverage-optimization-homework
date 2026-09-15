@@ -1,0 +1,64 @@
+{
+  "instance": "data/instances/houses_n10000_k12_r10.txt",
+  "n_houses": 10000,
+  "n_unique": 3148,
+  "k": 12,
+  "radius": 10.0,
+  "n_candidates": 11822,
+  "seconds": 60.0,
+  "seed": 2026,
+  "naive_hc": {
+    "name": "naive_hc_multistart",
+    "covered": 9104,
+    "uncovered": 896,
+    "seconds": 60.00004879199878,
+    "iterations": 2202040,
+    "restarts": 3,
+    "extra": {},
+    "chosen": [
+      8325,
+      4549,
+      6127,
+      8416,
+      6627,
+      6372,
+      7817,
+      4481,
+      3075,
+      9789,
+      4453,
+      5592
+    ],
+    "trace_points": 296
+  },
+  "tabu": {
+    "name": "tabu_search",
+    "covered": 9089,
+    "uncovered": 911,
+    "seconds": 60.00020298399977,
+    "iterations": 2223985,
+    "restarts": 1,
+    "extra": {
+      "tenure": 12,
+      "tabu_steps": 75,
+      "init": "random",
+      "idle_restart": 20,
+      "sample": 2500
+    },
+    "chosen": [
+      8641,
+      6915,
+      8325,
+      4768,
+      10119,
+      8603,
+      7964,
+      6517,
+      4481,
+      3075,
+      4668,
+      5587
+    ],
+    "trace_points": 77
+  }
+}

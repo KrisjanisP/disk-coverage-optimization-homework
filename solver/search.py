@@ -151,27 +151,139 @@ def greedy_start(model: Model, rng: np.random.Generator | None = None, rcl: int 
     """K times, pick among the ``rcl`` unused candidates with highest residual cover."""
     chosen: list[int] = []
     counts = np.zeros(model.inst.n_unique, dtype=np.int32)
-    weights = model.inst.weights
+    weights = model.inst.weights.astype(np.float64, copy=False)
+    occ = np.zeros(model.n_cand, dtype=bool)
     for _ in range(model.k):
-        occupied = set(chosen)
-        ranked: list[tuple[int, int]] = []
-        for c in range(model.n_cand):
-            if c in occupied:
-                continue
-            pts = model.covered[c]
-            gain = int(weights[pts][counts[pts] == 0].sum()) if pts.size else 0
-            ranked.append((gain, c))
-        ranked.sort(reverse=True)
-        pool = ranked[: max(1, rcl)]
-        if rng is None or len(pool) == 1:
-            best_c = pool[0][1]
+        residual = np.where(counts == 0, weights, 0.0)
+        gain = model.cover_mat.dot(residual)
+        gain[occ] = -1.0
+        if rng is None or rcl <= 1:
+            best_c = int(np.argmax(gain))
         else:
-            w = np.array([g + 1 for g, _ in pool], dtype=np.float64)
+            pool_n = min(max(1, rcl), model.n_cand - int(occ.sum()))
+            top = np.argpartition(gain, -pool_n)[-pool_n:]
+            top = top[np.argsort(gain[top])[::-1]]
+            w = gain[top] + 1.0
+            w = np.maximum(w, 1e-12)
             w /= w.sum()
-            best_c = pool[int(rng.choice(len(pool), p=w))][1]
+            best_c = int(rng.choice(top, p=w))
         chosen.append(best_c)
+        occ[best_c] = True
         counts[model.covered[best_c]] += 1
     return np.asarray(chosen, dtype=np.int32)
+
+
+def _swap_costs(
+    model: Model,
+    state: State,
+    slot: int,
+    skip: np.ndarray,
+) -> tuple[int, np.ndarray]:
+    """Uncovered counts after replacing ``chosen[slot]``. Restores ``state.counts``."""
+    weights = model.inst.weights.astype(np.float64, copy=False)
+    counts = state.counts
+    old = int(state.chosen[slot])
+    drop = model.covered[old]
+    loss = float(weights[drop][counts[drop] == 1].sum())
+    counts[drop] -= 1
+    residual = np.where(counts == 0, weights, 0.0)
+    cost = (state.uncovered + loss) - model.cover_mat.dot(residual)
+    cost[skip] = np.inf
+    counts[drop] += 1
+    return old, cost
+
+
+def first_improving_swap(
+    model: Model,
+    state: State,
+    rng: np.random.Generator,
+) -> tuple[int, int, int, int] | None:
+    """First slot (random order) with an improving 1-swap; best swap on that slot."""
+    skip = np.zeros(model.n_cand, dtype=bool)
+    skip[state.chosen] = True
+    current = state.uncovered
+    for slot in rng.permutation(model.k):
+        slot = int(slot)
+        old, cost = _swap_costs(model, state, slot, skip)
+        new_idx = int(np.argmin(cost))
+        cand = float(cost[new_idx])
+        if not np.isfinite(cand):
+            continue
+        ival = int(np.rint(cand))
+        if ival < current:
+            return slot, new_idx, old, ival
+    return None
+
+
+def _record_best(state: State, best_uncovered: int, best_chosen: np.ndarray | None) -> tuple[int, np.ndarray]:
+    if state.uncovered < best_uncovered:
+        return state.uncovered, state.chosen.copy()
+    assert best_chosen is not None
+    return best_uncovered, best_chosen
+
+
+def climb_first_improvement(
+    model: Model,
+    state: State,
+    rng: np.random.Generator,
+    deadline: float,
+    trace: CostTrace | None = None,
+) -> int:
+    """Apply first-improving 1-swaps until a local minimum or the deadline."""
+    applied = 0
+    while time.perf_counter() < deadline:
+        move = first_improving_swap(model, state, rng)
+        if move is None:
+            if trace is not None:
+                trace.record(state.uncovered, force=True)
+            return applied
+        slot, new_idx, _old, _cost = move
+        apply_swap(model, state, slot, new_idx)
+        applied += 1
+        if trace is not None:
+            trace.record(state.uncovered, force=True)
+    return applied
+
+
+def best_admissible_swap(
+    model: Model,
+    state: State,
+    tabu_until: np.ndarray,
+    iteration: int,
+    best_uncovered: int,
+    trial: np.ndarray | None = None,
+) -> tuple[int, int, int, int] | None:
+    """Cheapest admissible 1-swap via one drop per slot and a sparse matvec."""
+    skip = np.zeros(model.n_cand, dtype=bool)
+    skip[state.chosen] = True
+    if trial is not None:
+        allow = np.zeros(model.n_cand, dtype=bool)
+        allow[trial] = True
+        skip |= ~allow
+    tabu = tabu_until > iteration
+    found = False
+    best_slot = -1
+    best_new = -1
+    best_old = -1
+    best_cost = 10**18
+    for slot in range(model.k):
+        old, cost = _swap_costs(model, state, slot, skip)
+        banned = tabu & (cost >= best_uncovered)
+        cost = np.where(banned, np.inf, cost)
+        new_idx = int(np.argmin(cost))
+        cand_cost = float(cost[new_idx])
+        if not np.isfinite(cand_cost):
+            continue
+        ival = int(np.rint(cand_cost))
+        if not found or ival < best_cost:
+            found = True
+            best_cost = ival
+            best_slot = slot
+            best_new = new_idx
+            best_old = old
+    if not found:
+        return None
+    return best_slot, best_new, best_old, best_cost
 
 
 def tabu_search(
@@ -179,62 +291,56 @@ def tabu_search(
     rng: np.random.Generator,
     seconds: float,
     tenure: int,
-    idle_restart: int = 40,
-    rcl: int = 4,
+    idle_restart: int = 80,
+    sample: int | None = None,
 ) -> SearchResult:
-    """Best-admissible-move tabu search (Glover), restarted from randomized greedy."""
+    """First-improvement climb, then best-admissible tabu kicks, random restarts.
+
+    After the climb, idle counts tabu steps without a new global best so cycling
+    cannot stall a restart. ``sample`` is unused-candidate sample size per tabu
+    step; ``None`` scans the full neighbourhood.
+    """
     if tenure < 1:
         raise ValueError("tabu tenure must be >= 1")
+    if sample is not None and sample < 1:
+        raise ValueError("neighbourhood sample must be >= 1")
     t0 = time.perf_counter()
     deadline = t0 + seconds
     trace = CostTrace(t0)
     best_chosen: np.ndarray | None = None
     best_uncovered = 10**18
     tabu_until = np.full(model.n_cand, -1, dtype=np.int32)
-    steps = 0
     restarts = 0
     tabu_steps = 0
+    climb_steps = 0
     while time.perf_counter() < deadline:
-        start = greedy_start(model, rng=rng, rcl=rcl)
-        state = make_state(model, start)
+        state = make_state(model, random_start(model, rng))
         restarts += 1
         trace.record(state.uncovered, force=True)
         if state.uncovered < best_uncovered:
             best_uncovered = state.uncovered
             best_chosen = state.chosen.copy()
+        n_climb = climb_first_improvement(model, state, rng, deadline, trace)
+        climb_steps += n_climb
+        best_uncovered, best_chosen = _record_best(state, best_uncovered, best_chosen)
         tabu_until.fill(-1)
         iteration = 0
         idle = 0
         while time.perf_counter() < deadline:
-            occupied = set(int(x) for x in state.chosen)
-            found = False
-            best_slot = -1
-            best_new = -1
-            best_old = -1
-            best_cost = 10**18
-            for slot in rng.permutation(model.k):
-                if time.perf_counter() >= deadline:
-                    break
-                slot = int(slot)
-                old = int(state.chosen[slot])
-                for new_idx in range(model.n_cand):
-                    if new_idx in occupied:
-                        continue
-                    apply_swap(model, state, slot, new_idx)
-                    steps += 1
-                    cost = state.uncovered
-                    apply_swap(model, state, slot, old)
-                    forbidden = int(tabu_until[new_idx]) > iteration
-                    if forbidden and cost >= best_uncovered:
-                        continue
-                    if not found or cost < best_cost:
-                        found = True
-                        best_cost = cost
-                        best_slot = slot
-                        best_new = new_idx
-                        best_old = old
-            if not found:
+            trial: np.ndarray | None
+            if sample is None:
+                trial = None
+            else:
+                occupied = set(int(x) for x in state.chosen)
+                free = [i for i in range(model.n_cand) if i not in occupied]
+                if len(free) > sample:
+                    trial = rng.choice(np.asarray(free, dtype=np.int32), size=sample, replace=False)
+                else:
+                    trial = np.asarray(free, dtype=np.int32)
+            move = best_admissible_swap(model, state, tabu_until, iteration, best_uncovered, trial)
+            if move is None:
                 break
+            best_slot, best_new, best_old, _cost = move
             apply_swap(model, state, best_slot, best_new)
             tabu_until[best_old] = iteration + tenure
             iteration += 1
@@ -244,6 +350,9 @@ def tabu_search(
                 best_uncovered = state.uncovered
                 best_chosen = state.chosen.copy()
                 idle = 0
+                n_climb = climb_first_improvement(model, state, rng, deadline, trace)
+                climb_steps += n_climb
+                best_uncovered, best_chosen = _record_best(state, best_uncovered, best_chosen)
             else:
                 idle += 1
                 if idle >= idle_restart:
@@ -257,13 +366,15 @@ def tabu_search(
         covered=covered_houses(model, best_state),
         chosen=best_chosen,
         seconds=time.perf_counter() - t0,
-        iterations=steps,
+        iterations=climb_steps + tabu_steps,
         restarts=restarts,
         extra={
             "tenure": tenure,
             "tabu_steps": tabu_steps,
-            "init": f"randomized_greedy_rcl{rcl}",
+            "climb_steps": climb_steps,
+            "init": "random_then_first_improvement",
             "idle_restart": idle_restart,
+            "sample": sample,
             "trace_points": len(trace.t),
         },
         trace_t=trace.t,
