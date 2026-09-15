@@ -1,1 +1,69 @@
-# disk-coverage-optimization-homework
+# Maximum coverage with *K* unit disks
+
+Small practical assignment (*mazais praktiskais darbs*, 20%) for **Praktiskā kombinatoriālā optimizācija**, University of Latvia, autumn 2026.
+
+Course materials (algorithms lecture and related slides) are in [`slides/`](slides/).
+The assignment brief is on slide “Mazais praktiskais darbs!” of `slides/LectureAlgorithms2026.pdf`.
+Examples: <https://agris.oranzais.lumii.lv/index.php/PKO_Piem%C4%93ri>.
+
+## Problem
+
+**Input.** *N* points with integer coordinates in the plane, \([(x_1,y_1),\ldots,(x_n,y_n)]\), and a natural number *K* (number of disks).
+
+**Disks.** Each disk has radius 1. Centers may be real (not necessarily integer).
+
+**Goal.** Place the *K* disks so that as many input points as possible are covered.
+A point is covered if its Euclidean distance to at least one disk center is at most 1.
+
+This is the maximum-coverage problem with *K* unit disks.
+
+### Discretization
+
+The continuous placement problem is equivalent to a discrete one: there is an optimal solution in which every disk is chosen from a finite candidate set.
+
+A covered set of points has a smallest enclosing disk determined by at most three of those points on the boundary.
+Keep a candidate whenever that disk has radius \(\le 1\).
+There are \(O(N^3)\) triples, which is the candidate set cited when agreeing the task with the lecturer.
+
+A tighter equivalent set has size \(O(N^2)\): centers of unit disks whose boundary passes through two input points (at most two such centers per pair at distance \(\le 2\)), plus one-point placements (center at the point).
+Implementation should use the \(O(N^2)\) set unless there is a reason not to.
+
+Once candidates are fixed, a solution is a choice of *K* candidate centers (repetition allowed only if that is useful; usually it is not).
+
+## Assignment requirements
+
+From the algorithms lecture. Deadline: **11 October 2026, 23:59**. The practical is mandatory for a passing grade.
+
+1. Agree a problem with the lecturer (this one; email below).
+2. Choose a local-search algorithm (lecture examples: simulated annealing, tabu search, late acceptance).
+3. Implement the **problem** and the **algorithm** in a language of choice (Python, Java, C#, …). **Do not use a ready-made implementation of the optimization algorithm.** Libraries for geometry, plotting, tests, etc. are fine; OR-Tools / Timefold / metaheuristic packages for the search itself are not.
+4. Build test instances of several sizes. Record runtime and solution quality against the optimum or a best-known solution.
+5. Write a short (2–3 page) report.
+6. Submit **one PDF** on e-studijas containing:
+   - problem statement;
+   - implementation write-up with subsections **(a) domain, (b) evaluation, (c) move/neighbourhood, (d) algorithm**;
+   - testing process and results;
+   - link to a Git repository with code and test instances.
+
+Course methods the implementation is expected to follow: construct an initial solution, then walk a neighbourhood graph (local search). Construction heuristics and neighbourhoods are lecture material; the metaheuristics named for this homework are SA, TS, and LAHC.
+
+AI/LLM use is allowed. You remain responsible for the result.
+
+## Status
+
+Problem chosen; not yet confirmed by the lecturer.
+
+Algorithm not chosen yet.
+
+No solver code yet.
+
+### Email sent to the lecturer
+
+> Sveiki! Vēlos saskaņot mazā praktiskā darba uzdevumu p k optimizācijā.
+>
+> Doti N punkti ar veselām koordinātēm 2D plaknē - [(x1,y1),...,(xn,yn)] - un naturāls skaitlis K - disku skaits (ar rādiusu viens). Jāatrod, kā šos diskus izvietot, lai noklāt maksimāli daudz punktus.
+>
+> Ar cieņu
+> Krišjānis Petručeņa
+>
+> P.s. problēma ir diskrēta, jo var (viegli) pierādīt, ka katram diskam jāatrodas vienā no O(N^3) punktiem.
