@@ -67,13 +67,13 @@ We therefore build a population density and sample houses from it.
 Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, with a minimum separation so that the cities do not collapse into one blob.
 Convolve the impulses with a Gaussian of $\sigma=20$ pixels.
 The result is the grayscale density in Fig.~\ref{fig:density}.
-Sample $N=10\,000$ pixel locations with replacement from that density, add unit-square jitter inside each pixel, and scale the coordinates onto a square of side $40$.
+Sample $N=10\,000$ pixel locations with replacement from that density, add unit-square jitter inside each pixel, and scale the coordinates onto a square of side $10$.
 Fig.~\ref{fig:houses} shows the sampled houses before rounding.
 
-The side length is the unit of the covering radius: a tower covers a neighbourhood, not the whole map and not a single house.
-Cities in this instance span a few units, so one disk covers a core but not an entire city.
+The side length is the unit of the covering radius.
+A city blob is about one unit across, so a single disk of radius one covers most of a city rather than only its core.
 The instance file stores integer coordinates obtained by rounding, together with a default budget $K=12$.
-Rounding maps many houses onto the same grid cell ($593$ distinct cells here).
+Rounding maps many houses onto the same grid cell ($62$ distinct cells here).
 Those duplicates are still distinct households: a disk that covers the cell covers every house in it.
 
 Later instances will vary $N$, $C$, and $K$.
@@ -138,11 +138,7 @@ We will not implement simulated annealing or tabu search for this practical.
 
 \section{A first timed comparison}
 
-Both methods received $300$\,s on the $N=10\,000$, $K=12$ map, which has $593$ distinct cells and $2718$ candidate centres.
-Naive multi-start hill-climbing covered $3599$ houses after $93$ local minima.
-LAHC covered $3561$ houses after $37$ restarts, with history length $5000$.
-Late acceptance did not beat a full-pass first-improvement climb on this neighbourhood.
-The hill-climbing value is the current best-known reference for that instance.
+The $N=10\,000$, $K=12$ comparison below was measured on the previous map of side $40$ and is omitted until it is rerun on the side-$10$ instance.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
