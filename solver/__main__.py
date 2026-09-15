@@ -9,17 +9,19 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import load_instance
-from solver.search import lahc, naive_multistart
+from solver.plots import save_cost_figures, write_trace_csv
+from solver.search import naive_multistart, tabu_search
 from solver.state import Model
 
 
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Cover houses with K unit disks")
     p.add_argument("--instance", type=Path, required=True)
-    p.add_argument("--seconds", type=float, default=300.0, help="wall time per method")
-    p.add_argument("--history", type=int, default=5000, help="LAHC history length")
+    p.add_argument("--seconds", type=float, default=60.0, help="wall time per method")
+    p.add_argument("--tenure", type=int, default=12, help="tabu tenure")
     p.add_argument("--seed", type=int, default=2026)
     p.add_argument("--json-out", type=Path, default=None)
+    p.add_argument("--figure-dir", type=Path, default=None)
     return p.parse_args(argv)
 
 
@@ -31,8 +33,9 @@ def _result_dict(res) -> dict:
         "seconds": res.seconds,
         "iterations": res.iterations,
         "restarts": res.restarts,
-        "extra": res.extra,
+        "extra": {k: v for k, v in res.extra.items() if k != "trace_points"},
         "chosen": [int(x) for x in res.chosen],
+        "trace_points": len(res.trace_t),
     }
 
 
@@ -47,17 +50,17 @@ def main(argv: list[str] | None = None) -> int:
         file=sys.stderr,
     )
     rng_hc = np.random.default_rng(args.seed)
-    rng_lahc = np.random.default_rng(args.seed + 1)
+    rng_ts = np.random.default_rng(args.seed + 1)
     hc = naive_multistart(model, rng_hc, args.seconds)
     print(
         f"naive HC  covered={hc.covered}/{inst.n_houses}  "
         f"restarts={hc.restarts}  iters={hc.iterations}  {hc.seconds:.1f}s",
         file=sys.stderr,
     )
-    ls = lahc(model, rng_lahc, args.seconds, args.history)
+    ts = tabu_search(model, rng_ts, args.seconds, args.tenure)
     print(
-        f"LAHC      covered={ls.covered}/{inst.n_houses}  "
-        f"restarts={ls.restarts}  iters={ls.iterations}  {ls.seconds:.1f}s  history={args.history}",
+        f"tabu      covered={ts.covered}/{inst.n_houses}  "
+        f"restarts={ts.restarts}  iters={ts.iterations}  {ts.seconds:.1f}s  tenure={args.tenure}",
         file=sys.stderr,
     )
     payload = {
@@ -69,13 +72,19 @@ def main(argv: list[str] | None = None) -> int:
         "seconds": args.seconds,
         "seed": args.seed,
         "naive_hc": _result_dict(hc),
-        "lahc": _result_dict(ls),
+        "tabu": _result_dict(ts),
     }
     text = json.dumps(payload, indent=2)
     print(text)
     if args.json_out is not None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(text + "\n", encoding="utf-8")
+        write_trace_csv(hc, args.json_out.with_name("cost_trace_hc.csv"))
+        write_trace_csv(ts, args.json_out.with_name("cost_trace_tabu.csv"))
+    fig_dir = args.figure_dir
+    current_fig, best_fig = save_cost_figures(hc, ts, fig_dir)
+    print(f"wrote {current_fig}", file=sys.stderr)
+    print(f"wrote {best_fig}", file=sys.stderr)
     return 0
 
 

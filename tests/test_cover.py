@@ -4,7 +4,7 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import Instance
-from solver.search import hill_climb_until_stuck, lahc, naive_multistart
+from solver.search import greedy_start, hill_climb_until_stuck, lahc, naive_multistart, tabu_search
 from solver.state import Model, make_state
 
 
@@ -46,3 +46,25 @@ def test_multistart_covers_the_pair():
     res = naive_multistart(model, rng, seconds=0.2)
     assert res.covered == 2
     assert res.restarts >= 1
+
+
+def test_tabu_covers_the_pair():
+    model, _inst = _tiny()
+    rng = np.random.default_rng(3)
+    res = tabu_search(model, rng, seconds=0.2, tenure=3)
+    assert res.covered == 2
+
+
+def test_greedy_covers_the_pair():
+    model, inst = _tiny()
+    st = make_state(model, greedy_start(model))
+    assert inst.n_houses - st.uncovered == 2
+
+
+def test_hc_trace_is_nonempty():
+    model, _inst = _tiny()
+    rng = np.random.default_rng(4)
+    res = naive_multistart(model, rng, seconds=0.05)
+    assert len(res.trace_t) >= 1
+    assert res.trace_best[-1] == res.uncovered
+    assert all(a >= b for a, b in zip(res.trace_best, res.trace_best[1:]))
