@@ -17,7 +17,7 @@ K_TOWERS = 12
 GRID = 512
 SIGMA_PX = 20.0
 MIN_SEP_PX = 80.0
-WORLD = 40
+WORLD = 10
 RURAL_MIX = 0.0
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -92,8 +92,8 @@ def style_axes(ax: plt.Axes) -> None:
     ax.set_aspect("equal")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
-    ax.set_xticks(range(0, WORLD + 1, 10))
-    ax.set_yticks(range(0, WORLD + 1, 10))
+    ax.set_xticks(range(0, WORLD + 1, 2))
+    ax.set_yticks(range(0, WORLD + 1, 2))
 
 
 def save_density_figure(density: np.ndarray) -> Path:

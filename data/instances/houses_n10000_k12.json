@@ -6,7 +6,7 @@
   "grid": 512,
   "sigma_px": 20.0,
   "min_sep_px": 80.0,
-  "world": 40,
+  "world": 10,
   "rural_mix": 0.0,
   "city_centres_px": [
     [
@@ -52,11 +52,11 @@
     0.7391992638398867,
     0.6870016333764373
   ],
-  "unique_integer_locations": 593,
+  "unique_integer_locations": 62,
   "bbox": [
-    5,
     1,
-    39,
-    36
+    0,
+    10,
+    9
   ]
 }

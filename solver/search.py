@@ -105,6 +105,98 @@ def naive_multistart(
     )
 
 
+def greedy_start(model: Model) -> np.ndarray:
+    """K times, pick the unused candidate covering the most still-uncovered weight."""
+    chosen: list[int] = []
+    counts = np.zeros(model.inst.n_unique, dtype=np.int32)
+    weights = model.inst.weights
+    for _ in range(model.k):
+        occupied = set(chosen)
+        best_c = -1
+        best_gain = -1
+        for c in range(model.n_cand):
+            if c in occupied:
+                continue
+            pts = model.covered[c]
+            if pts.size == 0:
+                gain = 0
+            else:
+                gain = int(weights[pts][counts[pts] == 0].sum())
+            if gain > best_gain:
+                best_gain = gain
+                best_c = c
+        if best_c < 0:
+            raise RuntimeError("greedy could not pick a centre")
+        chosen.append(best_c)
+        counts[model.covered[best_c]] += 1
+    return np.asarray(chosen, dtype=np.int32)
+
+
+def tabu_search(
+    model: Model,
+    rng: np.random.Generator,
+    seconds: float,
+    tenure: int,
+) -> SearchResult:
+    """Best-admissible-move tabu search (Glover). Evicted centres may not return for ``tenure`` steps."""
+    if tenure < 1:
+        raise ValueError("tabu tenure must be >= 1")
+    t0 = time.perf_counter()
+    deadline = t0 + seconds
+    state = make_state(model, greedy_start(model))
+    best_chosen = state.chosen.copy()
+    best_uncovered = state.uncovered
+    tabu_until = np.full(model.n_cand, -1, dtype=np.int32)
+    iteration = 0
+    steps = 0
+    while time.perf_counter() < deadline:
+        occupied = set(int(x) for x in state.chosen)
+        best_slot = -1
+        best_new = -1
+        best_old = -1
+        best_cost = 10**18
+        found = False
+        for slot in rng.permutation(model.k):
+            if time.perf_counter() >= deadline:
+                break
+            slot = int(slot)
+            old = int(state.chosen[slot])
+            for new_idx in range(model.n_cand):
+                if new_idx in occupied:
+                    continue
+                apply_swap(model, state, slot, new_idx)
+                steps += 1
+                cost = state.uncovered
+                apply_swap(model, state, slot, old)
+                forbidden = int(tabu_until[new_idx]) > iteration
+                if forbidden and cost >= best_uncovered:
+                    continue
+                if not found or cost < best_cost:
+                    found = True
+                    best_cost = cost
+                    best_slot = slot
+                    best_new = new_idx
+                    best_old = old
+        if not found:
+            break
+        apply_swap(model, state, best_slot, best_new)
+        tabu_until[best_old] = iteration + tenure
+        iteration += 1
+        if state.uncovered < best_uncovered:
+            best_uncovered = state.uncovered
+            best_chosen = state.chosen.copy()
+    best_state = make_state(model, best_chosen)
+    return SearchResult(
+        name="tabu_search",
+        uncovered=best_state.uncovered,
+        covered=covered_houses(model, best_state),
+        chosen=best_chosen,
+        seconds=time.perf_counter() - t0,
+        iterations=steps,
+        extra={"tenure": tenure, "tabu_steps": iteration, "init": "greedy"},
+    )
+
+
 def lahc(
     model: Model,
     rng: np.random.Generator,
