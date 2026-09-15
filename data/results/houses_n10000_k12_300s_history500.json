@@ -1,0 +1,57 @@
+{
+  "instance": "data/instances/houses_n10000_k12.txt",
+  "n_houses": 10000,
+  "n_unique": 593,
+  "k": 12,
+  "n_candidates": 2718,
+  "seconds": 300.0,
+  "seed": 2026,
+  "naive_hc": {
+    "name": "naive_hc_multistart",
+    "covered": 3578,
+    "uncovered": 6422,
+    "seconds": 300.00001758599956,
+    "iterations": 7890871,
+    "restarts": 47,
+    "extra": {},
+    "chosen": [
+      2085,
+      2570,
+      1113,
+      1466,
+      2079,
+      218,
+      739,
+      722,
+      1637,
+      2450,
+      1872,
+      171
+    ]
+  },
+  "lahc": {
+    "name": "lahc",
+    "covered": 3518,
+    "uncovered": 6482,
+    "seconds": 300.00005199899897,
+    "iterations": 12942836,
+    "restarts": 0,
+    "extra": {
+      "history": 500
+    },
+    "chosen": [
+      1636,
+      1981,
+      739,
+      2620,
+      1467,
+      168,
+      2085,
+      2512,
+      722,
+      219,
+      125,
+      1113
+    ]
+  }
+}

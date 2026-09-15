@@ -24,7 +24,7 @@ We study the placement of $K$ disks of radius one so as to cover as many as poss
 The points are households.
 Each disk is a cellular tower with a fixed range.
 The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$, or $O(N^3)$ if every triple of points is used to form a smallest enclosing disk.
-This note records the problem, a first clustered benchmark, and the intended solver: greedy construction as the baseline, then late-acceptance hill-climbing.
+This note records the problem, a first clustered benchmark, and the intended solver: multi-start naive hill-climbing as the baseline, then late-acceptance hill-climbing.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -102,14 +102,13 @@ The assignment requires one self-written local-search algorithm, not a solver li
 We use late-acceptance hill-climbing (LAHC)~\cite{Burke2017}.
 That is the method, not the baseline.
 
-The baseline is the greedy maximum-coverage construction on the candidate centres: $K$ times, place a disk that covers the most still-uncovered houses~\cite{Nemhauser1978}.
-That construction is also \texttt{INITIALIZE} in the lecture meta-algorithm.
-A second, weaker reference is naive hill-climbing on the same neighbourhood (accept a neighbour only if it covers at least as many houses).
-If LAHC cannot beat those two, late acceptance is doing no work.
+The baseline is naive first-improvement hill-climbing on the same neighbourhood: accept a swap only when it strictly reduces the number of uncovered houses, and stop when a full neighbourhood pass finds no improving move.
+When a run reaches that local minimum, we draw a fresh random $K$-subset and climb again.
+Both methods get the same wall-clock budget (five minutes on the large map).
+If LAHC cannot beat the best local minimum found by those restarts, the history list is doing no work.
 
-Quality against the assignment's ``optimum or best known'' is not another metaheuristic.
-On small instances we will compare to an exact optimum over the candidate set.
-On the $N=10\,000$ map the greedy value is the best-known reference until LAHC improves it.
+Quality against the assignment's ``optimum or best known'' is the multi-start hill-climbing value on large maps.
+On small instances we will also compare to an exact optimum over the candidate set.
 
 \subsection{Domain}
 
@@ -131,11 +130,19 @@ That is a $K$-swap in a set of size $O(N^2)$.
 LAHC keeps a history of length $n$ of recent costs~\cite{Burke2017}.
 A candidate neighbour is accepted if it is better than the current solution or better than the cost from $n$ iterations ago.
 We follow the published update (store the cost of the current solution after the accept/reject decision), not the lecture slide that writes the rejected neighbour's cost into the list.
+If the history fills with the local-minimum cost, late acceptance stops accepting worsening moves.
+We then restart from a new random $K$-subset, so the five-minute budget is not spent rejecting neighbours of a frozen solution.
 
-Naive hill-climbing is the same loop with the late-acceptance clause removed.
+Naive hill-climbing is the same neighbourhood with the late-acceptance clause removed, restarted from random $K$-subsets until the time budget expires.
 We will not implement simulated annealing or tabu search for this practical.
 
-Timed experiments on several $N$ remain to be done.
+\section{A first timed comparison}
+
+Both methods received $300$\,s on the $N=10\,000$, $K=12$ map, which has $593$ distinct cells and $2718$ candidate centres.
+Naive multi-start hill-climbing covered $3599$ houses after $93$ local minima.
+LAHC covered $3561$ houses after $37$ restarts, with history length $5000$.
+Late acceptance did not beat a full-pass first-improvement climb on this neighbourhood.
+The hill-climbing value is the current best-known reference for that instance.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
