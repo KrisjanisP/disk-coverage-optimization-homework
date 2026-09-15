@@ -59,3 +59,12 @@ def test_greedy_covers_the_pair():
     model, inst = _tiny()
     st = make_state(model, greedy_start(model))
     assert inst.n_houses - st.uncovered == 2
+
+
+def test_hc_trace_is_nonempty():
+    model, _inst = _tiny()
+    rng = np.random.default_rng(4)
+    res = naive_multistart(model, rng, seconds=0.05)
+    assert len(res.trace_t) >= 1
+    assert res.trace_best[-1] == res.uncovered
+    assert all(a >= b for a, b in zip(res.trace_best, res.trace_best[1:]))

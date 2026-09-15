@@ -9,6 +9,7 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import load_instance
+from solver.plots import save_cost_figures, write_trace_csv
 from solver.search import naive_multistart, tabu_search
 from solver.state import Model
 
@@ -20,6 +21,7 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     p.add_argument("--tenure", type=int, default=12, help="tabu tenure")
     p.add_argument("--seed", type=int, default=2026)
     p.add_argument("--json-out", type=Path, default=None)
+    p.add_argument("--figure-dir", type=Path, default=None)
     return p.parse_args(argv)
 
 
@@ -31,8 +33,9 @@ def _result_dict(res) -> dict:
         "seconds": res.seconds,
         "iterations": res.iterations,
         "restarts": res.restarts,
-        "extra": res.extra,
+        "extra": {k: v for k, v in res.extra.items() if k != "trace_points"},
         "chosen": [int(x) for x in res.chosen],
+        "trace_points": len(res.trace_t),
     }
 
 
@@ -76,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.json_out is not None:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         args.json_out.write_text(text + "\n", encoding="utf-8")
+        write_trace_csv(hc, args.json_out.with_name("cost_trace_hc.csv"))
+        write_trace_csv(ts, args.json_out.with_name("cost_trace_tabu.csv"))
+    fig_dir = args.figure_dir
+    current_fig, best_fig = save_cost_figures(hc, ts, fig_dir)
+    print(f"wrote {current_fig}", file=sys.stderr)
+    print(f"wrote {best_fig}", file=sys.stderr)
     return 0
 
 

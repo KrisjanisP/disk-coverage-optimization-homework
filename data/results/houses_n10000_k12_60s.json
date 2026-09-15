@@ -10,9 +10,9 @@
     "name": "naive_hc_multistart",
     "covered": 9413,
     "uncovered": 587,
-    "seconds": 60.00001834,
-    "iterations": 3040558,
-    "restarts": 103,
+    "seconds": 60.000036649000094,
+    "iterations": 3015200,
+    "restarts": 102,
     "extra": {},
     "chosen": [
       380,
@@ -27,18 +27,19 @@
       173,
       331,
       485
-    ]
+    ],
+    "trace_points": 4689
   },
   "tabu": {
     "name": "tabu_search",
     "covered": 9445,
     "uncovered": 555,
-    "seconds": 60.007553852,
-    "iterations": 3049820,
+    "seconds": 60.00105824499997,
+    "iterations": 3025295,
     "restarts": 11,
     "extra": {
       "tenure": 12,
-      "tabu_steps": 467,
+      "tabu_steps": 463,
       "init": "randomized_greedy_rcl4",
       "idle_restart": 40
     },
@@ -55,6 +56,7 @@
       330,
       170,
       113
-    ]
+    ],
+    "trace_points": 475
   }
 }

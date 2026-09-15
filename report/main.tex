@@ -135,9 +135,28 @@ Naive hill-climbing is the same neighbourhood with no memory and with random res
 \section{A first timed comparison}
 
 Both methods received $60$\,s on the $N=10\,000$, $K=12$ map ($120$ distinct cells, $557$ candidate centres).
-Naive multi-start hill-climbing covered $9413$ houses after $103$ local minima.
+Naive multi-start hill-climbing covered $9413$ houses after $102$ local minima.
 Tabu search covered $9445$ houses after $11$ restarts.
+Fig.~\ref{fig:cost-current} shows the current cost: hill-climbing spikes at every random restart, while tabu search wanders and only spikes when an idle restart fires.
+Fig.~\ref{fig:cost-best} shows the best cost so far; the vertical axis is cropped after the first second, once hill-climbing has left the initial random placement.
 Late-acceptance hill-climbing is not competitive on this neighbourhood and is not the submitted method.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/cost-current.pdf}
+\caption{Current number of uncovered houses against wall-clock time.
+Top: naive hill-climbing.
+Bottom: tabu search.}
+\label{fig:cost-current}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/cost-best.pdf}
+\caption{Best-so-far uncovered count for both methods.
+Tabu search reaches $555$ uncovered houses at about $18$\,s and holds it.}
+\label{fig:cost-best}
+\end{figure}
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}

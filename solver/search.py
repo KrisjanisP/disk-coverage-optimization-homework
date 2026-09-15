@@ -18,6 +18,34 @@ class SearchResult:
     iterations: int
     restarts: int = 0
     extra: dict = field(default_factory=dict)
+    trace_t: list[float] = field(default_factory=list)
+    trace_current: list[int] = field(default_factory=list)
+    trace_best: list[int] = field(default_factory=list)
+
+
+class CostTrace:
+    """Wall-clock samples of current cost and best-so-far cost."""
+
+    def __init__(self, t0: float, min_dt: float = 0.02) -> None:
+        self.t0 = t0
+        self.min_dt = min_dt
+        self.t: list[float] = []
+        self.current: list[int] = []
+        self.best: list[int] = []
+        self._best = 10**18
+        self._last_t = -1.0
+
+    def record(self, current: int, force: bool = False) -> None:
+        now = time.perf_counter() - self.t0
+        if current < self._best:
+            self._best = current
+            force = True
+        if not force and now - self._last_t < self.min_dt:
+            return
+        self.t.append(now)
+        self.current.append(int(current))
+        self.best.append(int(self._best))
+        self._last_t = now
 
 
 def random_start(model: Model, rng: np.random.Generator) -> np.ndarray:
@@ -40,9 +68,12 @@ def hill_climb_until_stuck(
     state: State,
     rng: np.random.Generator,
     deadline: float,
+    trace: CostTrace | None = None,
 ) -> int:
     """First-improvement walk. Stops when a full neighbourhood pass finds no improving swap."""
     steps = 0
+    if trace is not None:
+        trace.record(state.uncovered, force=True)
     while time.perf_counter() < deadline:
         improved = False
         occupied = set(int(x) for x in state.chosen)
@@ -64,11 +95,15 @@ def hill_climb_until_stuck(
                     occupied.remove(old)
                     occupied.add(new_idx)
                     improved = True
+                    if trace is not None:
+                        trace.record(state.uncovered, force=True)
                     break
                 apply_swap(model, state, slot, old)
             if improved:
                 break
         if not improved:
+            if trace is not None:
+                trace.record(state.uncovered, force=True)
             return steps
     return steps
 
@@ -80,13 +115,15 @@ def naive_multistart(
 ) -> SearchResult:
     t0 = time.perf_counter()
     deadline = t0 + seconds
+    trace = CostTrace(t0)
     best: State | None = None
     iterations = 0
     restarts = 0
     while time.perf_counter() < deadline:
         state = make_state(model, random_start(model, rng))
         restarts += 1
-        iterations += hill_climb_until_stuck(model, state, rng, deadline)
+        trace.record(state.uncovered, force=True)
+        iterations += hill_climb_until_stuck(model, state, rng, deadline, trace=trace)
         if best is None or state.uncovered < best.uncovered:
             best = State(
                 chosen=state.chosen.copy(),
@@ -94,6 +131,7 @@ def naive_multistart(
                 uncovered=state.uncovered,
             )
     assert best is not None
+    trace.record(best.uncovered, force=True)
     return SearchResult(
         name="naive_hc_multistart",
         uncovered=best.uncovered,
@@ -102,6 +140,10 @@ def naive_multistart(
         seconds=time.perf_counter() - t0,
         iterations=iterations,
         restarts=restarts,
+        extra={"trace_points": len(trace.t)},
+        trace_t=trace.t,
+        trace_current=trace.current,
+        trace_best=trace.best,
     )
 
 
@@ -145,6 +187,7 @@ def tabu_search(
         raise ValueError("tabu tenure must be >= 1")
     t0 = time.perf_counter()
     deadline = t0 + seconds
+    trace = CostTrace(t0)
     best_chosen: np.ndarray | None = None
     best_uncovered = 10**18
     tabu_until = np.full(model.n_cand, -1, dtype=np.int32)
@@ -155,6 +198,7 @@ def tabu_search(
         start = greedy_start(model, rng=rng, rcl=rcl)
         state = make_state(model, start)
         restarts += 1
+        trace.record(state.uncovered, force=True)
         if state.uncovered < best_uncovered:
             best_uncovered = state.uncovered
             best_chosen = state.chosen.copy()
@@ -195,6 +239,7 @@ def tabu_search(
             tabu_until[best_old] = iteration + tenure
             iteration += 1
             tabu_steps += 1
+            trace.record(state.uncovered, force=True)
             if state.uncovered < best_uncovered:
                 best_uncovered = state.uncovered
                 best_chosen = state.chosen.copy()
@@ -204,6 +249,7 @@ def tabu_search(
                 if idle >= idle_restart:
                     break
     assert best_chosen is not None
+    trace.record(best_uncovered, force=True)
     best_state = make_state(model, best_chosen)
     return SearchResult(
         name="tabu_search",
@@ -213,7 +259,16 @@ def tabu_search(
         seconds=time.perf_counter() - t0,
         iterations=steps,
         restarts=restarts,
-        extra={"tenure": tenure, "tabu_steps": tabu_steps, "init": f"randomized_greedy_rcl{rcl}", "idle_restart": idle_restart},
+        extra={
+            "tenure": tenure,
+            "tabu_steps": tabu_steps,
+            "init": f"randomized_greedy_rcl{rcl}",
+            "idle_restart": idle_restart,
+            "trace_points": len(trace.t),
+        },
+        trace_t=trace.t,
+        trace_current=trace.current,
+        trace_best=trace.best,
     )
 
 
