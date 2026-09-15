@@ -9,7 +9,7 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import load_instance
-from solver.plots import save_cost_figures, save_placement_figure, write_trace_csv
+from solver.plots import save_cost_figures, save_placement_figure, save_placement_houses_figure, write_trace_csv
 from solver.search import naive_multistart, tabu_search
 from solver.state import Model
 
@@ -87,6 +87,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"wrote {current_fig}", file=sys.stderr)
     print(f"wrote {best_fig}", file=sys.stderr)
     print(f"wrote {place_fig}", file=sys.stderr)
+    raw_path = args.instance.with_name(args.instance.stem + "_raw.npy")
+    if raw_path.is_file():
+        houses_xy = np.load(raw_path)
+        houses_fig = save_placement_houses_figure(model, ts.chosen, houses_xy, fig_dir)
+        print(f"wrote {houses_fig}", file=sys.stderr)
     return 0
 
 

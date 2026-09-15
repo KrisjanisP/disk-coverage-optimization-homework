@@ -83,6 +83,7 @@ def save_instance(xy: np.ndarray, meta: dict) -> Path:
         np.savetxt(fh, xy_int, fmt="%d %d")
     meta_path = path.with_suffix(".json")
     meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    np.save(INSTANCE_DIR / f"houses_n{N_HOUSES}_k{K_TOWERS}_raw.npy", xy)
     return path
 
 

@@ -143,6 +143,87 @@ def save_placement_figure(
     return path
 
 
+def _covered_mask_for_houses(model: Model, chosen: np.ndarray, houses_xy: np.ndarray, world: float) -> np.ndarray:
+    state = make_state(model, chosen)
+    grid_n = int(world) + 1
+    cover = np.zeros((grid_n, grid_n), dtype=bool)
+    for (x, y), hit in zip(model.inst.xy, state.counts > 0):
+        cover[int(x), int(y)] = bool(hit)
+    rounded = np.clip(np.rint(houses_xy), 0, world).astype(int)
+    return cover[rounded[:, 0], rounded[:, 1]]
+
+
+def save_placement_houses_figure(
+    model: Model,
+    chosen: np.ndarray,
+    houses_xy: np.ndarray,
+    out_dir: Path | None = None,
+    filename: str = "placement-tabu-houses.pdf",
+) -> Path:
+    """Same disks as the cell map, with the original sampled houses underneath."""
+    _style()
+    out_dir = Path(out_dir) if out_dir is not None else FIGURE_DIR
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / filename
+    world = float(max(10.0, np.ceil(model.inst.xy.max())))
+    covered = _covered_mask_for_houses(model, chosen, houses_xy, world)
+
+    fig, ax = plt.subplots(figsize=(3.35, 3.15), layout="constrained")
+    for idx in chosen:
+        cx, cy = model.centres[int(idx)]
+        ax.add_patch(
+            Circle(
+                (cx, cy),
+                1.0,
+                facecolor="0.82",
+                edgecolor="black",
+                lw=0.7,
+                alpha=0.35,
+                zorder=2,
+            )
+        )
+    ax.scatter(
+        houses_xy[covered, 0],
+        houses_xy[covered, 1],
+        s=1.2,
+        c="black",
+        alpha=0.22,
+        linewidths=0,
+        zorder=3,
+        rasterized=True,
+    )
+    ax.scatter(
+        houses_xy[~covered, 0],
+        houses_xy[~covered, 1],
+        s=2.0,
+        c="black",
+        alpha=0.55,
+        linewidths=0,
+        zorder=4,
+        rasterized=True,
+    )
+    ax.scatter(
+        model.centres[chosen, 0],
+        model.centres[chosen, 1],
+        s=18,
+        facecolors="white",
+        edgecolors="black",
+        linewidths=0.6,
+        zorder=5,
+    )
+    ax.set_xlim(0, world)
+    ax.set_ylim(0, world)
+    ax.set_aspect("equal")
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ticks = range(0, int(world) + 1, 2)
+    ax.set_xticks(list(ticks))
+    ax.set_yticks(list(ticks))
+    fig.savefig(path, format="pdf")
+    plt.close(fig)
+    return path
+
+
 def write_trace_csv(res: SearchResult, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as fh:

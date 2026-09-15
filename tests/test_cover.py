@@ -7,7 +7,7 @@ import numpy as np
 
 from solver.candidates import candidate_centres, coverage_lists
 from solver.instance import Instance
-from solver.plots import save_placement_figure
+from solver.plots import save_placement_figure, save_placement_houses_figure
 from solver.search import greedy_start, hill_climb_until_stuck, lahc, naive_multistart, tabu_search
 from solver.state import Model, make_state
 
@@ -80,5 +80,15 @@ def test_placement_figure_writes():
     res = tabu_search(model, rng, seconds=0.2, tenure=3)
     with tempfile.TemporaryDirectory() as td:
         path = save_placement_figure(model, res.chosen, Path(td))
+        assert path.is_file()
+        assert path.stat().st_size > 0
+
+
+def test_placement_houses_figure_writes():
+    model, inst = _tiny()
+    rng = np.random.default_rng(3)
+    res = tabu_search(model, rng, seconds=0.2, tenure=3)
+    with tempfile.TemporaryDirectory() as td:
+        path = save_placement_houses_figure(model, res.chosen, inst.xy, Path(td))
         assert path.is_file()
         assert path.stat().st_size > 0

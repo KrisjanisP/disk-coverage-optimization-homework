@@ -137,8 +137,9 @@ Naive hill-climbing is the same neighbourhood with no memory and with random res
 Both methods received $60$\,s on the $N=10\,000$, $K=12$ map ($120$ distinct cells, $557$ candidate centres).
 Naive multi-start hill-climbing covered $9413$ houses after $102$ local minima.
 Tabu search covered $9445$ houses after $11$ restarts.
-Fig.~\ref{fig:placement} is that tabu placement: twelve unit disks on the integer house grid.
-Filled markers are covered cells (area scales with household count); open markers are uncovered.
+Fig.~\ref{fig:placement} is that tabu placement on the integer house grid.
+Fig.~\ref{fig:placement-houses} shows the same disks on the original $10\,000$ sampled houses, before rounding.
+Filled markers in Fig.~\ref{fig:placement} are covered cells (area scales with household count); open markers are uncovered.
 White dots mark the chosen centres.
 Fig.~\ref{fig:cost-current} shows the current cost: hill-climbing spikes at every random restart, while tabu search wanders and only spikes when an idle restart fires.
 Fig.~\ref{fig:cost-best} shows the best cost so far; the vertical axis is cropped after the first second, once hill-climbing has left the initial random placement.
@@ -151,6 +152,14 @@ Late-acceptance hill-climbing is not competitive on this neighbourhood and is no
 Filled cells are covered; open cells are not.
 Circles are unit disks; white dots are centres.}
 \label{fig:placement}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{figures/placement-tabu-houses.pdf}
+\caption{The same $12$ disks on the original sampled houses, before rounding to integer cells.
+Covered houses are the dense clouds; uncovered houses are the sparse hinterland dots.}
+\label{fig:placement-houses}
 \end{figure}
 
 \begin{figure}[!t]
