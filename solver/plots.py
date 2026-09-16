@@ -81,7 +81,7 @@ def save_cost_figures(
     ax.plot(hc.trace_t, hc.trace_best, color="black", lw=1.1, ls="--", label="naivais algoritms")
     ax.plot(tabu.trace_t, tabu.trace_best, color="black", lw=1.1, ls="-", label="tabu meklēšana")
     ax.set_xlabel("laiks (s)")
-    ax.set_ylabel("nenoklātas mājsaimniecības")
+    ax.set_ylabel("nenoklātas mājas")
     ax.set_xlim(0, max(hc.trace_t[-1], tabu.trace_t[-1]))
     late_hc = [b for t, b in zip(hc.trace_t, hc.trace_best) if t >= 5.0]
     late_ts = [b for t, b in zip(tabu.trace_t, tabu.trace_best) if t >= 5.0]
