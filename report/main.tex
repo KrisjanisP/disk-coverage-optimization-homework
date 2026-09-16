@@ -42,14 +42,14 @@ disku noklājums, objektu izvietošana, lokālā meklēšana, sintētiski telpis
 Mobilo sakaru operators drīkst uzstādīt tikai $K$ torņus.
 Katrs tornis apkalpo visas mājas attālumā līdz $R$.
 Jāapkalpo pēc iespējas vairāk māju.
-Tas ir maksimālā noklājuma uzdevums ar $K$ vienādiem diskiem ar rādiusu $R$.
+Tas ir maksimālā noklājuma uzdevums (\textit{maximum coverage}) ar $K$ vienādiem diskiem ar rādiusu $R$.
 Ievaddati ir $N$ punkti ar veselām koordinātām, disku skaits $K\in\mathbb{N}$ un rādiuss $R>0$.
-Derīgs risinājums ir $K$ centru kopa telpā $\mathbb{R}^2$.
+Derīgs risinājums (\textit{feasible solution}) ir $K$ centru kopa telpā $\mathbb{R}^2$.
 Punkts $p$ ir noklāts, ja kādam centram $c$ izpildās $\|p-c\|_2\le R$.
 Mērķis ir maksimizēt noklāto punktu skaitu.
 Pirmkods un testa instances pieejamas vietnē \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
-Noteikt, vai ar $K$ vienādiem diskiem var noklāt dotu punktu kopu, ir NP-pilna problēma~\cite{Megiddo1984}.
+Noteikt, vai ar $K$ vienādiem diskiem var noklāt dotu punktu kopu, ir NP-pilnīga problēma (\textit{NP-complete})~\cite{Megiddo1984}.
 Visu punktu noklāšanai ar iespējami mazu vienādu disku skaitu pastāv polinomiāla laika aproksimācijas shēma (PTAS), kas izmanto nobīdes stratēģiju~\cite{Hochbaum1985}.
 Variants ar fiksētu disku skaitu ir vismaz tikpat grūts: atbilde ir ``jā'' tieši tad, ja maksimālais noklājums ir $N$.
 
@@ -58,14 +58,14 @@ Punkts noklāto kopu var pamest, tikai šķērsojot diska robežu, tāpēc disku
 Pēc tam disku var griezt ap šo punktu, līdz uz robežas nonāk otrs noklāts punkts (c); ja tāda nav, disks noklāj vienu punktu un tā centru var novietot pašā punktā.
 Tāpēc pietiek aplūkot diskus, kuru centrs ir kāds no punktiem vai kuru robeža iet caur diviem punktiem.
 Katram punktu pārim attālumā līdz $2R$ tādu disku ir ne vairāk kā divi, tātad kandidātu centru ir $O(N^2)$.
-Pilnai apkārtnes pārlasei kopa ir pārāk liela, tāpēc centrus noapaļojam līdz veselo skaitļu režģim; pārvietojums nepārsniedz $1/\sqrt{2}<R/10$.
+Pilnai apkārtnes (\textit{neighbourhood}) pārlasei kopa ir pārāk liela, tāpēc centrus noapaļojam līdz veselo skaitļu režģim; pārvietojums nepārsniedz $1/\sqrt{2}<R/10$.
 Noklājumu joprojām nosaka Eiklīda attālums līdz $R$.
 Meklēšanas uzdevums ir izvēlēties $K$ noapaļotos kandidātus.
 
 \begin{figure}[!t]
 \centering
 \begin{tikzpicture}[
-  scale=0.68,
+  scale=0.64,
   pt/.style={circle,fill=black,inner sep=0pt,minimum size=2.6pt},
   unc/.style={circle,draw=black,fill=white,inner sep=0pt,minimum size=2.6pt},
   ctr/.style={cross out,draw=black,inner sep=0pt,minimum size=3pt,thick},
@@ -124,19 +124,19 @@ Instancē ir $K=12$, $R=10$ un $3148$ atšķirīgas režģa šūnas.
 \centering
 \begin{tabular}{@{}c@{\hspace{1.2em}}c@{}}
 \subfloat[Mājas kartē.]{%
-\includegraphics[width=0.30\textwidth]{figures/sampled-houses.pdf}%
+\includegraphics[width=0.28\textwidth]{figures/sampled-houses.pdf}%
 \label{fig:houses}}
 &
 \subfloat[Tabu izvietojums: noklātas $9117$.]{%
-\includegraphics[width=0.30\textwidth]{figures/placement-tabu.pdf}%
+\includegraphics[width=0.28\textwidth]{figures/placement-tabu.pdf}%
 \label{fig:placement}}
 \\[0.2em]
 \subfloat[Diski uz visām mājām.]{%
-\includegraphics[width=0.30\textwidth]{figures/placement-tabu-houses.pdf}%
+\includegraphics[width=0.28\textwidth]{figures/placement-tabu-houses.pdf}%
 \label{fig:placement-houses}}
 &
 \subfloat[Labākās izmaksas: $896$ pret $883$.]{%
-\includegraphics[width=0.30\textwidth]{figures/cost-best.pdf}%
+\includegraphics[width=0.28\textwidth]{figures/cost-best.pdf}%
 \label{fig:cost-best}}
 \end{tabular}
 \caption{Testa instance, tabu diski ar $R=10$ un $120$\,s salīdzinājums.
@@ -147,7 +147,7 @@ Attēlā (b) aizpildītās šūnas ir noklātas (laukums $\propto$ māju skaitam
 \section{Metode}
 
 Vēlās akceptēšanas kalnā kāpšana (\textit{late acceptance})~\cite{Burke2017} nepārspēja vairākkārt palaistu naivo algoritmu, tāpēc iesniegtā metode ir tabu meklēšana (\textit{tabu search})~\cite{Glover1989}.
-Bāzes metode izmanto pirmā uzlabojuma kalnā kāpšanu, līdz pilna apkārtnes pārlase neatrod uzlabojošu gājienu, un tad sāk no jaunas nejaušas $K$ elementu apakškopas.
+Bāzes metode (\textit{baseline}) izmanto pirmā uzlabojuma kalnā kāpšanu, līdz pilna apkārtnes pārlase neatrod uzlabojošu gājienu, un tad sāk no jaunas nejaušas $K$ elementu apakškopas.
 Abām metodēm dots divu minūšu izpildes laiks.
 
 \subsection{Domēns}
@@ -157,12 +157,12 @@ Kandidātu kopa sastāv no I~nodaļā aprakstītajiem $O(N^2)$ noapaļotajiem ce
 
 \subsection{Novērtēšana}
 
-Izmaksas ir nenoklāto māju skaits: $N$ mīnus to punktu skaits, kuri atrodas ne tālāk par $R$ no vismaz viena izvēlētā centra.
+Izmaksas (\textit{cost}) ir nenoklāto māju skaits: $N$ mīnus to punktu skaits, kuri atrodas ne tālāk par $R$ no vismaz viena izvēlētā centra.
 Mazāka vērtība ir labāka.
 
 \subsection{Gājiens}
 
-Kaimiņu iegūst, vienu izvēlēto centru aizstājot ar citu kandidātu, tātad veicot viena elementa apmaiņas gājienu (\textit{move}) noapaļotajā kandidātu kopā.
+Kaimiņu (\textit{neighbour}) iegūst, vienu izvēlēto centru aizstājot ar citu kandidātu, tātad veicot viena elementa apmaiņas gājienu (\textit{move}) noapaļotajā kandidātu kopā.
 
 \subsection{Algoritms}
 
@@ -173,8 +173,8 @@ Tas ir viens reizinājums starp kandidātu--šūnu noklājuma matricu un nenokl�
 
 Tabu meklēšana sākas no nejaušas $K$ elementu apakškopas.
 Vispirms lieto pirmā uzlabojuma kalnā kāpšanu: pozīcijas apskata nejaušā secībā, un pirmajā pozīcijā, kur iespējams uzlabojums, ievieto tās labāko vēl neizmantoto kandidātu (\textit{first-improvement}).
-No lokālā optimuma katrā nākamajā solī izvēlas pieļaujamo viena elementa apmaiņu ar zemākajām izmaksām visā apkārtnē.
-Izņemto centru nedrīkst ievietot atpakaļ $12$ soļus, ja vien gājiens nepārspēj globāli labāko rezultātu; tas ir amnestijas nosacījums (\textit{aspiration}).
+No lokālā optimuma (\textit{local minimum}) katrā nākamajā solī izvēlas pieļaujamo (\textit{admissible}) viena elementa apmaiņu ar zemākajām izmaksām visā apkārtnē.
+Izņemto centru nedrīkst ievietot atpakaļ $12$ soļus (\textit{tenure}), ja vien gājiens nepārspēj globāli labāko rezultātu; tas ir amnestijas nosacījums (\textit{aspiration}).
 Ja globāli labākais rezultāts nemainās $80$ tabu soļus, meklēšanu pārstartē no jaunas nejaušas $K$ elementu apakškopas.
 Naivais kalnā kāpšanas algoritms (\textit{hill-climbing}) izmanto to pašu apkārtni bez atmiņas un nejauši pārstartējas, līdz beidzas atvēlētais laiks.
 
@@ -184,7 +184,7 @@ Abām metodēm deva $120$\,s kartē ar $N=10\,000$, $K=12$ un $R=10$; tajā ir $
 Vairākkārt palaistais naivais kalnā kāpšanas algoritms noklāja $9104$ mājas un sasniedza $6$ lokālos optimumus.
 Tabu meklēšana noklāja $9117$ mājas pēc $197$ pārstartēšanām, $3715$ kalnā kāpšanas soļiem un $16016$ tabu soļiem.
 Bez matricas reizinājuma, novērtējot apmaiņas pa vienai Python ciklā, pilna apkārtnes pārlase prasa aptuveni $4$\,s.
-Veselo skaitļu programmēšanas modelis ar $11822$ kandidātiem $60$\,s laikā neatgrieza nevienu derīgu risinājumu, tāpēc $9117$ ir šajā eksperimentā labākais zināmais rezultāts.
+Veselo skaitļu programmēšanas modelis (\textit{integer program}) ar $11822$ kandidātiem $60$\,s laikā neatgrieza nevienu derīgu risinājumu, tāpēc $9117$ ir šajā eksperimentā labākais zināmais rezultāts.
 \ref{fig:results}.~att. parādītas mājas, tabu meklēšanas diski un līdz šim labāko izmaksu līknes.
 
 \bibliographystyle{IEEEtran}
