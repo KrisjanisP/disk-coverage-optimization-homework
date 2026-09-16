@@ -9,129 +9,128 @@
 \usepackage{microtype}
 \usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
+\renewcommand{\abstractname}{Kopsavilkums}
+\renewcommand{\IEEEkeywordsname}{Atslēgvārdi}
+\renewcommand{\figurename}{Att.}
+\renewcommand{\refname}{Atsauces}
+
 \begin{document}
 
-\title{Placing \texorpdfstring{$K$}{K} Disks of Radius \texorpdfstring{$R$}{R} to Cover the Most Households}
+\title{\texorpdfstring{$K$}{K} disku ar rādiusu \texorpdfstring{$R$}{R} izvietošana maksimāla mājsaimniecību skaita noklāšanai}
 
 \author{
 \IEEEauthorblockN{Kri\v{s}j\={a}nis Petru\v{c}e\c{n}a}
-\IEEEauthorblockA{University of Latvia}
+\IEEEauthorblockA{Latvijas Universitāte}
 }
 
 \maketitle
 
 \begin{abstract}
-We study the placement of $K$ disks of radius $R$ so as to cover as many as possible of $N$ given points in the plane.
-The points are households with integer coordinates.
-Each disk is a cellular tower with range $R$.
-The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$.
-This note records a clustered benchmark on the integer square $[0,100]\times[0,100]$ with $R=10$, and the solver: multi-start naive hill-climbing as the baseline, then tabu search.
+Pētām $K$ disku ar rādiusu $R$ izvietošanu, lai noklātu pēc iespējas vairāk no $N$ mājsaimniecībām ar veselām koordinātām.
+Nepārtrauktajai problēmai ir ekvivalenta diskrēta kandidātu kopa ar izmēru $O(N^2)$.
+Aprakstīta klasterēta testa instance kvadrātā $[0,100]^2$ ar $R=10$, vairākkārt palaists naivais kalnā kāpšanas algoritms kā bāzes metode un tabu meklēšana.
 \end{abstract}
 
 \begin{IEEEkeywords}
-disk coverage, facility location, local search, synthetic spatial data
+disku noklājums, objektu izvietošana, lokālā meklēšana, sintētiski telpiskie dati
 \end{IEEEkeywords}
 
-\section{Introduction}
+\section{Ievads}
 
-A cellular operator may install only $K$ towers.
-Each tower covers every household within distance $R$.
-The operator wants to cover as many households as possible.
+Mobilo sakaru operators drīkst uzstādīt tikai $K$ torņus.
+Katrs tornis apkalpo visas mājsaimniecības attālumā līdz $R$.
+Jāapkalpo pēc iespējas vairāk mājsaimniecību.
+Tas ir maksimālā noklājuma uzdevums ar $K$ vienādiem diskiem ar rādiusu $R$.
+Ievaddati ir $N$ punkti ar veselām koordinātām, disku skaits $K\in\mathbb{N}$ un rādiuss $R>0$.
+Derīgs risinājums ir $K$ centru kopa telpā $\mathbb{R}^2$.
+Punkts $p$ ir noklāts, ja kādam centram $c$ izpildās $\|p-c\|_2\le R$.
+Mērķis ir maksimizēt noklāto punktu skaitu.
+Programmas kods un testa instances pieejamas vietnē \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
-That story is the maximum-coverage problem with $K$ equal disks of radius $R$.
-The input is $N$ points with integer coordinates, a budget $K\in\mathbb{N}$, and a radius $R>0$.
-A feasible solution is $K$ centres in $\mathbb{R}^2$.
-A point $p$ is covered if some centre $c$ satisfies $\|p-c\|_2\le R$.
-The objective is the number of covered points.
-Code and instances are at \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
+Noteikt, vai ar $K$ vienādiem diskiem var noklāt dotu punktu kopu, ir NP-pilnīga problēma~\cite{Megiddo1984}.
+Visu punktu noklāšanai ar iespējami mazu vienādu disku skaitu pastāv polinomiāla laika aproksimācijas shēma (PTAS), kas izmanto nobīdes stratēģiju~\cite{Hochbaum1985}.
+Variants ar fiksētu disku skaitu ir vismaz tikpat grūts: atbilde ir ``jā'' tieši tad, ja maksimālais noklājums ir $N$.
 
-Deciding whether $K$ equal disks can cover a given point set is NP-complete~\cite{Megiddo1984}.
-Covering \emph{every} point with as few equal disks as possible admits a polynomial-time approximation scheme (PTAS) via the shifting strategy~\cite{Hochbaum1985}.
-The budgeted variant is at least as hard: the yes-instances are those for which the maximum coverage equals $N$.
+Optimālu centru var pārvietot, līdz disks ir noklātās kopas mazākais ietverošais disks, ko nosaka līdz trim robežpunktiem.
+Šādi iegūst $O(N^3)$ kandidātus.
+Mazākas ekvivalentas kopas izmērs ir $O(N^2)$: katram punktu pārim attālumā līdz $2R$ ir ne vairāk kā divi diski ar rādiusu $R$, kuru robeža iet caur abiem punktiem; jāpievieno arī paši ievaddatu punkti.
+Pilnai apkārtnes pārlasei kopa ir pārāk liela, tāpēc centrus noapaļojam līdz veselo skaitļu režģim; pārvietojums nepārsniedz $1/\sqrt{2}<R/10$.
+Noklājumu joprojām nosaka Eiklīda attālums līdz $R$.
+Meklēšanas uzdevums ir izvēlēties $K$ noapaļotos kandidātus.
 
-An optimal centre can always be moved until the disk is a smallest enclosing disk of the covered set, determined by one, two, or three points on the boundary.
-Keeping those disks of radius at most $R$ yields $O(N^3)$ candidates.
-A strictly smaller equivalent set has size $O(N^2)$: for every pair at distance at most $2R$ there are at most two disks of radius $R$ through both points, together with the input points themselves.
-On a map with thousands of locations that set is too large to scan as a neighbourhood, so we snap each centre onto the integer lattice (displacement at most $1/\sqrt{2}$).
-With $R=10$ the snap is a tenth of the covering radius.
-Coverage is still Euclidean distance $\le R$.
-The search chooses $K$ snapped candidates.
+\section{Testa instance}
 
-\section{Benchmark instance}
-
-Households concentrate in cities.
-Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, convolve with a Gaussian of $\sigma=20$ pixels, and mix in a uniform floor of $12\%$ of the density mass.
-Sample $N=10\,000$ locations with replacement, add unit-square jitter, scale onto a square of side $100$, and round to $\{0,\ldots,100\}$.
-Fig.~\ref{fig:houses} shows those integer houses.
-A city blob is about $10$ units across, matching $R=10$, so a single disk covers most of a city.
-The hinterland houses are the ones the extra towers compete for.
-The instance stores $K=12$ and $R=10$.
-Rounding leaves $3148$ distinct cells.
+Mājsaimniecības koncentrējas pilsētās.
+Uz $512\times 512$ režģa izvietojam $C=8$ impulsus ar atšķirīgiem svariem, veicam konvolūciju ar Gausa kodolu, kuram $\sigma=20$ pikseļi, un piejaucam vienmērīgu fonu ar $12\%$ no blīvuma masas.
+Ar atkārtojumiem ģenerējam $N=10\,000$ vietas, katram punktam pievienojam nejaušu nobīdi vienības kvadrātā, mērogojam uz kvadrātu ar malas garumu $100$ un noapaļojam koordinātas līdz $\{0,\ldots,100\}$.
+Šīs mājsaimniecības ar veselām koordinātām parādītas \ref{fig:houses}.~att.
+Pilsētas klastera platums ir aptuveni $10$ vienības, tāpēc ar $R=10$ viens disks noklāj lielāko pilsētas daļu.
+Instancē ir $K=12$, $R=10$ un $3148$ atšķirīgas režģa šūnas.
 
 \begin{figure*}[!t]
 \centering
 \begin{tabular}{@{}c@{\hspace{1.2em}}c@{}}
-\subfloat[Integer houses on the side-$100$ map.]{%
+\subfloat[Mājsaimniecības kartē.]{%
 \includegraphics[width=0.38\textwidth]{figures/sampled-houses.pdf}%
 \label{fig:houses}}
 &
-\subfloat[Tabu placement after $120$\,s ($9117$ covered).]{%
+\subfloat[Tabu izvietojums: noklātas $9117$.]{%
 \includegraphics[width=0.38\textwidth]{figures/placement-tabu.pdf}%
 \label{fig:placement}}
 \\[0.6em]
-\subfloat[Same disks on all $10\,000$ houses.]{%
+\subfloat[Diski uz visām mājsaimniecībām.]{%
 \includegraphics[width=0.38\textwidth]{figures/placement-tabu-houses.pdf}%
 \label{fig:placement-houses}}
 &
-\subfloat[Best-so-far uncovered count ($896$ vs $883$).]{%
+\subfloat[Labākās izmaksas: $896$ pret $883$.]{%
 \includegraphics[width=0.38\textwidth]{figures/cost-best.pdf}%
 \label{fig:cost-best}}
 \end{tabular}
-\caption{Houses, submitted tabu disks of radius $R=10$, and the $120$\,s comparison.
-In (b), filled markers are covered cells (area $\propto$ household count) and open markers are uncovered.}
+\caption{Testa instance, tabu diski ar $R=10$ un $120$\,s salīdzinājums.
+Attēlā (b) aizpildītās šūnas ir noklātas (laukums $\propto$ mājsaimniecību skaitam), bet tukšās --- nenoklātas.}
 \label{fig:results}
 \end{figure*}
 
-\section{Method}
+\section{Metode}
 
-The assignment requires one self-written local-search algorithm, not a solver library.
-Late-acceptance hill-climbing~\cite{Burke2017} did not beat multi-start hill-climbing on this neighbourhood, so we switch to tabu search~\cite{Glover1989}.
-The baseline is naive first-improvement hill-climbing until a full neighbourhood pass finds no improving move, then a new random $K$-subset, for a two-minute budget.
-Tabu search gets the same wall-clock.
+Jāīsteno savs lokālās meklēšanas algoritms, nevis jāizmanto gatava risinātāja bibliotēka.
+Vēlās akceptēšanas kalnā kāpšana~\cite{Burke2017} nepārspēja vairākkārt palaistu naivo algoritmu, tāpēc iesniegtā metode ir tabu meklēšana~\cite{Glover1989}.
+Bāzes metode izmanto pirmā uzlabojuma kalnā kāpšanu, līdz pilna apkārtnes pārlase neatrod uzlabojošu gājienu, un tad sāk no jaunas nejaušas $K$ elementu apakškopas.
+Abām metodēm dots divu minūšu izpildes laiks.
 
-\subsection{Domain}
+\subsection{Domēns}
 
-A solution is a list of $K$ candidate centres, without repetition.
-The candidate set is the snapped $O(N^2)$ radius-$R$ centres of Section~I.
+Risinājums ir saraksts ar $K$ atšķirīgiem kandidātcentriem.
+Kandidātu kopa sastāv no I~nodaļā aprakstītajiem $O(N^2)$ noapaļotajiem centriem.
 
-\subsection{Evaluation}
+\subsection{Novērtēšana}
 
-Cost is the number of uncovered houses, $N$ minus the number of points within distance $R$ of at least one chosen centre.
-Lower is better, matching the lecture's acceptance tests.
+Izmaksas ir nenoklāto mājsaimniecību skaits: $N$ mīnus to punktu skaits, kuri atrodas ne tālāk par $R$ no vismaz viena izvēlētā centra.
+Mazāka vērtība ir labāka.
 
-\subsection{Move}
+\subsection{Gājiens}
 
-A neighbour replaces one chosen centre with a different candidate: a $1$-swap in the snapped candidate set.
+Kaimiņu iegūst, vienu izvēlēto centru aizstājot ar citu kandidātu, tātad veicot viena elementa apmaiņas gājienu noapaļotajā kandidātu kopā.
 
-\subsection{Algorithm}
+\subsection{Algoritms}
 
-Tabu search starts from a random $K$-subset.
-It first climbs with first-improvement: slots in random order, and on the first slot that has a better centre, the best unused candidate for that slot is taken.
-A sparse candidate-by-house matrix makes that scan cheap (about $7$\,ms for all $11822$ centres).
-From the local minimum, each further step takes the lowest-cost admissible $1$-swap over the whole neighbourhood.
-The centre just evicted may not return for a tenure of $12$ steps, unless the swap beats the global best (aspiration).
-If the global best is unchanged for $80$ tabu steps, we restart from a new random $K$-subset.
-Naive hill-climbing is the same neighbourhood with no memory and with random restarts until the time budget expires.
+Tabu meklēšana sākas no nejaušas $K$ elementu apakškopas.
+Vispirms lieto pirmā uzlabojuma kalnā kāpšanu: pozīcijas apskata nejaušā secībā, un pirmajā pozīcijā, kur iespējams uzlabojums, ievieto tās labāko vēl neizmantoto kandidātu.
+Reta kandidātu un mājsaimniecību matrica ļauj visus $11822$ centrus pārlasīt aptuveni $7$\,ms.
+No lokālā optimuma katrā nākamajā solī izvēlas pieļaujamo viena elementa apmaiņu ar zemākajām izmaksām visā apkārtnē.
+Izņemto centru nedrīkst ievietot atpakaļ $12$ soļus, ja vien gājiens nepārspēj globāli labāko rezultātu; tas ir amnestijas nosacījums.
+Ja globāli labākais rezultāts nemainās $80$ tabu soļus, meklēšanu pārstartē no jaunas nejaušas $K$ elementu apakškopas.
+Naivais kalnā kāpšanas algoritms izmanto to pašu apkārtni bez atmiņas un nejauši pārstartējas, līdz beidzas atvēlētais laiks.
 
-\section{A timed comparison}
+\section{Salīdzinājums laikā}
 
-Both methods received $120$\,s on the $N=10\,000$, $K=12$, $R=10$ map ($3148$ distinct cells, $11822$ snapped candidates).
-Naive multi-start hill-climbing covered $9104$ houses after $6$ local minima.
-Tabu search covered $9117$ houses after $197$ restarts ($3715$ climbing steps and $16016$ tabu steps).
-Evaluating each swap in Python took about $4$\,s per full scan; with the sparse matrix, tabu sees the whole $1$-swap list and still restarts far more often than the naive climber.
-An integer program on the $11822$ candidates did not return a feasible incumbent within $60$\,s, so $9117$ is the best-known value on this run.
-Fig.~\ref{fig:results} shows the houses, the tabu disks, and the best-so-far cost traces.
-Late-acceptance hill-climbing is not the submitted method.
+Abām metodēm deva $120$\,s kartē ar $N=10\,000$, $K=12$ un $R=10$; tajā ir $3148$ atšķirīgas šūnas un $11822$ noapaļoti kandidāti.
+Vairākkārt palaistais naivais kalnā kāpšanas algoritms noklāja $9104$ mājsaimniecības un sasniedza $6$ lokālos optimumus.
+Tabu meklēšana noklāja $9117$ mājsaimniecības pēc $197$ pārstartēšanām, $3715$ kalnā kāpšanas soļiem un $16016$ tabu soļiem.
+Novērtējot apmaiņas Python kodā, pilna pārlase prasīja aptuveni $4$\,s; retā matrica ļauj tabu meklēšanai apskatīt visu apmaiņu kopu.
+Veselo skaitļu programmēšanas modelis ar $11822$ kandidātiem $60$\,s laikā neatgrieza nevienu derīgu risinājumu, tāpēc $9117$ ir šajā eksperimentā labākais zināmais rezultāts.
+\ref{fig:results}.~att. parādītas mājsaimniecības, tabu meklēšanas diski un līdz šim labāko izmaksu līknes.
+Vēlās akceptēšanas kalnā kāpšanas algoritms nav iesniegtā metode.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
