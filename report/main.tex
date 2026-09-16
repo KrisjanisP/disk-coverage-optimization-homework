@@ -2,17 +2,16 @@
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
-\usepackage{cite}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage[caption=false,font=footnotesize]{subfig}
 \usepackage{flushend}
 \usepackage{microtype}
-\usepackage{url}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
 
 \begin{document}
 
-\title{Placing $K$ Disks of Radius $R$ to Cover the Most Households}
+\title{Placing \texorpdfstring{$K$}{K} Disks of Radius \texorpdfstring{$R$}{R} to Cover the Most Households}
 
 \author{
 \IEEEauthorblockN{Kri\v{s}j\={a}nis Petru\v{c}e\c{n}a}
@@ -44,6 +43,7 @@ The input is $N$ points with integer coordinates, a budget $K\in\mathbb{N}$, and
 A feasible solution is $K$ centres in $\mathbb{R}^2$.
 A point $p$ is covered if some centre $c$ satisfies $\|p-c\|_2\le R$.
 The objective is the number of covered points.
+Code and instances are at \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
 Deciding whether $K$ equal disks can cover a given point set is NP-complete~\cite{Megiddo1984}.
 Covering \emph{every} point with as few equal disks as possible admits a polynomial-time approximation scheme (PTAS) via the shifting strategy~\cite{Hochbaum1985}.
@@ -132,7 +132,6 @@ Evaluating each swap in Python took about $4$\,s per full scan; with the sparse 
 An integer program on the $11822$ candidates did not return a feasible incumbent within $60$\,s, so $9117$ is the best-known value on this run.
 Fig.~\ref{fig:results} shows the houses, the tabu disks, and the best-so-far cost traces.
 Late-acceptance hill-climbing is not the submitted method.
-Code and instances: \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
