@@ -49,7 +49,7 @@ Punkts $p$ ir noklāts, ja kādam centram $c$ izpildās $\|p-c\|_2\le R$.
 Mērķis ir maksimizēt noklāto punktu skaitu.
 Pirmkods un testa instances pieejamas vietnē \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
-Noteikt, vai ar $K$ vienādiem diskiem var noklāt dotu punktu kopu, ir NP-pilnīga problēma~\cite{Megiddo1984}.
+Noteikt, vai ar $K$ vienādiem diskiem var noklāt dotu punktu kopu, ir NP-pilna problēma~\cite{Megiddo1984}.
 Visu punktu noklāšanai ar iespējami mazu vienādu disku skaitu pastāv polinomiāla laika aproksimācijas shēma (PTAS), kas izmanto nobīdes stratēģiju~\cite{Hochbaum1985}.
 Variants ar fiksētu disku skaitu ir vismaz tikpat grūts: atbilde ir ``jā'' tieši tad, ja maksimālais noklājums ir $N$.
 
@@ -65,7 +65,7 @@ Meklēšanas uzdevums ir izvēlēties $K$ noapaļotos kandidātus.
 \begin{figure}[!t]
 \centering
 \begin{tikzpicture}[
-  scale=0.72,
+  scale=0.68,
   pt/.style={circle,fill=black,inner sep=0pt,minimum size=2.6pt},
   unc/.style={circle,draw=black,fill=white,inner sep=0pt,minimum size=2.6pt},
   ctr/.style={cross out,draw=black,inner sep=0pt,minimum size=3pt,thick},
@@ -124,19 +124,19 @@ Instancē ir $K=12$, $R=10$ un $3148$ atšķirīgas režģa šūnas.
 \centering
 \begin{tabular}{@{}c@{\hspace{1.2em}}c@{}}
 \subfloat[Mājas kartē.]{%
-\includegraphics[width=0.32\textwidth]{figures/sampled-houses.pdf}%
+\includegraphics[width=0.30\textwidth]{figures/sampled-houses.pdf}%
 \label{fig:houses}}
 &
 \subfloat[Tabu izvietojums: noklātas $9117$.]{%
-\includegraphics[width=0.32\textwidth]{figures/placement-tabu.pdf}%
+\includegraphics[width=0.30\textwidth]{figures/placement-tabu.pdf}%
 \label{fig:placement}}
 \\[0.2em]
 \subfloat[Diski uz visām mājām.]{%
-\includegraphics[width=0.32\textwidth]{figures/placement-tabu-houses.pdf}%
+\includegraphics[width=0.30\textwidth]{figures/placement-tabu-houses.pdf}%
 \label{fig:placement-houses}}
 &
 \subfloat[Labākās izmaksas: $896$ pret $883$.]{%
-\includegraphics[width=0.32\textwidth]{figures/cost-best.pdf}%
+\includegraphics[width=0.30\textwidth]{figures/cost-best.pdf}%
 \label{fig:cost-best}}
 \end{tabular}
 \caption{Testa instance, tabu diski ar $R=10$ un $120$\,s salīdzinājums.
@@ -146,7 +146,7 @@ Attēlā (b) aizpildītās šūnas ir noklātas (laukums $\propto$ māju skaitam
 
 \section{Metode}
 
-Vēlās akceptēšanas kalnā kāpšana~\cite{Burke2017} nepārspēja vairākkārt palaistu naivo algoritmu, tāpēc iesniegtā metode ir tabu meklēšana~\cite{Glover1989}.
+Vēlās akceptēšanas kalnā kāpšana (\textit{late acceptance})~\cite{Burke2017} nepārspēja vairākkārt palaistu naivo algoritmu, tāpēc iesniegtā metode ir tabu meklēšana (\textit{tabu search})~\cite{Glover1989}.
 Bāzes metode izmanto pirmā uzlabojuma kalnā kāpšanu, līdz pilna apkārtnes pārlase neatrod uzlabojošu gājienu, un tad sāk no jaunas nejaušas $K$ elementu apakškopas.
 Abām metodēm dots divu minūšu izpildes laiks.
 
@@ -162,7 +162,7 @@ Mazāka vērtība ir labāka.
 
 \subsection{Gājiens}
 
-Kaimiņu iegūst, vienu izvēlēto centru aizstājot ar citu kandidātu, tātad veicot viena elementa apmaiņas gājienu noapaļotajā kandidātu kopā.
+Kaimiņu iegūst, vienu izvēlēto centru aizstājot ar citu kandidātu, tātad veicot viena elementa apmaiņas gājienu (\textit{move}) noapaļotajā kandidātu kopā.
 
 \subsection{Algoritms}
 
@@ -172,11 +172,11 @@ Lai novērtētu visas vienas pozīcijas apmaiņas, izņemam tajā esošo disku, 
 Tas ir viens reizinājums starp kandidātu--šūnu noklājuma matricu un nenoklāto šūnu māju vektoru, un visiem $11822$ kandidātiem tas prasa aptuveni $7$\,ms.
 
 Tabu meklēšana sākas no nejaušas $K$ elementu apakškopas.
-Vispirms lieto pirmā uzlabojuma kalnā kāpšanu: pozīcijas apskata nejaušā secībā, un pirmajā pozīcijā, kur iespējams uzlabojums, ievieto tās labāko vēl neizmantoto kandidātu.
+Vispirms lieto pirmā uzlabojuma kalnā kāpšanu: pozīcijas apskata nejaušā secībā, un pirmajā pozīcijā, kur iespējams uzlabojums, ievieto tās labāko vēl neizmantoto kandidātu (\textit{first-improvement}).
 No lokālā optimuma katrā nākamajā solī izvēlas pieļaujamo viena elementa apmaiņu ar zemākajām izmaksām visā apkārtnē.
-Izņemto centru nedrīkst ievietot atpakaļ $12$ soļus, ja vien gājiens nepārspēj globāli labāko rezultātu; tas ir amnestijas nosacījums.
+Izņemto centru nedrīkst ievietot atpakaļ $12$ soļus, ja vien gājiens nepārspēj globāli labāko rezultātu; tas ir amnestijas nosacījums (\textit{aspiration}).
 Ja globāli labākais rezultāts nemainās $80$ tabu soļus, meklēšanu pārstartē no jaunas nejaušas $K$ elementu apakškopas.
-Naivais kalnā kāpšanas algoritms izmanto to pašu apkārtni bez atmiņas un nejauši pārstartējas, līdz beidzas atvēlētais laiks.
+Naivais kalnā kāpšanas algoritms (\textit{hill-climbing}) izmanto to pašu apkārtni bez atmiņas un nejauši pārstartējas, līdz beidzas atvēlētais laiks.
 
 \section{Salīdzinājums laikā}
 
