@@ -148,7 +148,6 @@ Attēlā (b) aizpildītās šūnas ir noklātas (laukums $\propto$ māju skaitam
 
 Vēlās akceptēšanas kalnā kāpšana (\textit{late acceptance})~\cite{Burke2017} nepārspēja vairākkārt palaistu naivo algoritmu, tāpēc iesniegtā metode ir tabu meklēšana (\textit{tabu search})~\cite{Glover1989}.
 Bāzes metode (\textit{baseline}) izmanto pirmā uzlabojuma kalnā kāpšanu, līdz pilna apkārtnes pārlase neatrod uzlabojošu gājienu, un tad sāk no jaunas nejaušas $K$ elementu apakškopas.
-Abām metodēm dots divu minūšu izpildes laiks.
 
 \subsection{Domēns}
 
@@ -158,7 +157,6 @@ Kandidātu kopa sastāv no I~nodaļā aprakstītajiem $O(N^2)$ noapaļotajiem ce
 \subsection{Novērtēšana}
 
 Izmaksas (\textit{cost}) ir nenoklāto māju skaits: $N$ mīnus to punktu skaits, kuri atrodas ne tālāk par $R$ no vismaz viena izvēlētā centra.
-Mazāka vērtība ir labāka.
 
 \subsection{Gājiens}
 
@@ -166,10 +164,12 @@ Kaimiņu (\textit{neighbour}) iegūst, vienu izvēlēto centru aizstājot ar cit
 
 \subsection{Algoritms}
 
-Katram kandidātcentram iepriekš aprēķinām režģa šūnu kopu, kuru tas noklāj, un katrai šūnai --- māju skaitu tajā.
-Meklēšanas laikā katrai šūnai uzturam skaitītāju, cik izvēlēto disku to noklāj; disku apmaiņa maina tikai divu disku šūnu skaitītājus, tāpēc izmaksas pārrēķina bez pilnas pārlases.
-Lai novērtētu visas vienas pozīcijas apmaiņas, izņemam tajā esošo disku, atrodam šūnas, kas pēc tam paliek nenoklātas, un katram kandidātam saskaitām mājas šajās šūnās, kuras tas noklātu.
-Tas ir viens reizinājums starp kandidātu--šūnu noklājuma matricu un nenoklāto šūnu māju vektoru, un visiem $11822$ kandidātiem tas prasa aptuveni $7$\,ms.
+Noklājumu kodē $0$--$1$ matrica $A$: rinda $i$ ir kandidāts, kolonna $j$ ir šūna, $A_{ij}=1$, ja disks $i$ noklāj šūnu $j$, un šūnas svars ir māju skaits tajā.
+Meklēšanas laikā katrai šūnai uzturam, cik izvēlēto disku to noklāj; apmaiņa pārrēķina tikai divu disku šūnas.
+Lai novērtētu visas vienas pozīcijas apmaiņas, izņemam tajā esošo disku un veidojam vektoru $w$, kur $w_j$ ir māju skaits šūnā $j$, ja to vairs nenoklāj neviens palikušais disks, citādi $0$.
+Reizinājums (\textit{matrix--vector product}) $Aw$ visiem kandidātiem vienlaikus dod, cik no šīm mājām katrs noklātu.
+Piemēram, ja $A$ rindas ir $(1,1,0)$ un $(0,1,1)$, bet $w=(2,0,3)^\top$, tad $Aw=(2,3)^\top$: pirmais kandidāts noklāj $2$ palikušās mājas, otrais --- $3$.
+Visām $11822$ rindām tas prasa aptuveni $7$\,ms.
 
 Tabu meklēšana sākas no nejaušas $K$ elementu apakškopas.
 Vispirms lieto pirmā uzlabojuma kalnā kāpšanu: pozīcijas apskata nejaušā secībā, un pirmajā pozīcijā, kur iespējams uzlabojums, ievieto tās labāko vēl neizmantoto kandidātu (\textit{first-improvement}).
@@ -185,7 +185,6 @@ Vairākkārt palaistais naivais kalnā kāpšanas algoritms noklāja $9104$ māj
 Tabu meklēšana noklāja $9117$ mājas pēc $197$ pārstartēšanām, $3715$ kalnā kāpšanas soļiem un $16016$ tabu soļiem.
 Bez matricas reizinājuma, novērtējot apmaiņas pa vienai Python ciklā, pilna apkārtnes pārlase prasa aptuveni $4$\,s.
 Veselo skaitļu programmēšanas modelis (\textit{integer program}) ar $11822$ kandidātiem $60$\,s laikā neatgrieza nevienu derīgu risinājumu, tāpēc $9117$ ir šajā eksperimentā labākais zināmais rezultāts.
-\ref{fig:results}.~att. parādītas mājas, tabu meklēšanas diski un līdz šim labāko izmaksu līknes.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
