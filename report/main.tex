@@ -5,6 +5,8 @@
 \usepackage{cite}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
+\usepackage[caption=false,font=footnotesize]{subfig}
+\usepackage{flushend}
 \usepackage{microtype}
 \usepackage{url}
 
@@ -23,8 +25,8 @@
 We study the placement of $K$ disks of radius $R$ so as to cover as many as possible of $N$ given points in the plane.
 The points are households with integer coordinates.
 Each disk is a cellular tower with range $R$.
-The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$, or $O(N^3)$ if every triple of points is used to form a smallest enclosing disk.
-This note records the problem, a clustered benchmark on the integer square $[0,100]\times[0,100]$ with $R=10$, and the solver: multi-start naive hill-climbing as the baseline, then tabu search.
+The continuous placement problem has an equivalent discrete candidate set of size $O(N^2)$.
+This note records a clustered benchmark on the integer square $[0,100]\times[0,100]$ with $R=10$, and the solver: multi-start naive hill-climbing as the baseline, then tabu search.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -38,80 +40,69 @@ Each tower covers every household within distance $R$.
 The operator wants to cover as many households as possible.
 
 That story is the maximum-coverage problem with $K$ equal disks of radius $R$.
-The input is a list of $N$ points with integer coordinates, a budget $K\in\mathbb{N}$, and a radius $R>0$.
-A feasible solution is a list of $K$ centres in $\mathbb{R}^2$.
+The input is $N$ points with integer coordinates, a budget $K\in\mathbb{N}$, and a radius $R>0$.
+A feasible solution is $K$ centres in $\mathbb{R}^2$.
 A point $p$ is covered if some centre $c$ satisfies $\|p-c\|_2\le R$.
 The objective is the number of covered points.
 
 Deciding whether $K$ equal disks can cover a given point set is NP-complete~\cite{Megiddo1984}.
 Covering \emph{every} point with as few equal disks as possible admits a polynomial-time approximation scheme (PTAS) via the shifting strategy~\cite{Hochbaum1985}.
-The budgeted variant studied here is at least as hard as that decision problem: the yes-instances are exactly those for which the maximum coverage equals $N$.
+The budgeted variant is at least as hard: the yes-instances are those for which the maximum coverage equals $N$.
 
-\section{A discrete candidate set}
-
-An optimal centre can always be moved until the covered set is unchanged and the disk is a smallest enclosing disk of that set.
-A smallest enclosing disk is determined by one point (the centre at that point), by two points (the centre at their midpoint, if they lie at distance at most $2R$), or by three points on the boundary.
-Enumerating those disks and keeping those of radius at most $R$ yields $O(N^3)$ candidate centres.
-
-A strictly smaller equivalent set has size $O(N^2)$.
-For every pair of points at Euclidean distance at most $2R$ there are at most two disks of radius $R$ whose boundary passes through both points.
-Those centres, together with the input points themselves, contain an optimal placement.
-
-On a map with thousands of distinct integer locations that $O(N^2)$ set is too large to scan as a neighbourhood.
-We therefore snap each constructed centre onto the integer lattice (a displacement of at most $1/\sqrt{2}$).
-With $R=10$ that snap is a tenth of the covering radius.
-Coverage is still decided by Euclidean distance $\le R$ from the snapped centre.
-The search problem is combinatorial: choose $K$ snapped candidates.
+An optimal centre can always be moved until the disk is a smallest enclosing disk of the covered set, determined by one, two, or three points on the boundary.
+Keeping those disks of radius at most $R$ yields $O(N^3)$ candidates.
+A strictly smaller equivalent set has size $O(N^2)$: for every pair at distance at most $2R$ there are at most two disks of radius $R$ through both points, together with the input points themselves.
+On a map with thousands of locations that set is too large to scan as a neighbourhood, so we snap each centre onto the integer lattice (displacement at most $1/\sqrt{2}$).
+With $R=10$ the snap is a tenth of the covering radius.
+Coverage is still Euclidean distance $\le R$.
+The search chooses $K$ snapped candidates.
 
 \section{Benchmark instance}
 
-Uniform random points would not look like a map.
-Households concentrate in cities and thin out between them.
-We therefore build a population density and sample houses from it.
-
-Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, with a minimum separation so that the cities do not collapse into one blob.
-Convolve the impulses with a Gaussian of $\sigma=20$ pixels.
-A uniform floor of $12\%$ of the density mass is mixed in so that some households sit in the hinterland.
-The result is the grayscale density in Fig.~\ref{fig:density}.
-Sample $N=10\,000$ pixel locations with replacement from that density, add unit-square jitter inside each pixel, and scale the coordinates onto a square of side $100$.
-Round each coordinate to the nearest integer in $\{0,\ldots,100\}$.
+Households concentrate in cities.
+Place $C=8$ impulses of unequal weight on a $512\times 512$ grid, convolve with a Gaussian of $\sigma=20$ pixels, and mix in a uniform floor of $12\%$ of the density mass.
+Sample $N=10\,000$ locations with replacement, add unit-square jitter, scale onto a square of side $100$, and round to $\{0,\ldots,100\}$.
 Fig.~\ref{fig:houses} shows those integer houses.
-
-A city blob is about $10$ units across, matching the covering radius $R=10$.
-A single disk covers most of a city rather than only its core.
+A city blob is about $10$ units across, matching $R=10$, so a single disk covers most of a city.
 The hinterland houses are the ones the extra towers compete for.
-The instance file stores the integer coordinates, the budget $K=12$, and the radius $R=10$.
-Rounding on this lattice leaves $3148$ distinct cells, so almost every house keeps its own location.
+The instance stores $K=12$ and $R=10$.
+Rounding leaves $3148$ distinct cells.
 
-\begin{figure}[!t]
+\begin{figure*}[!t]
 \centering
-\includegraphics[width=\columnwidth]{figures/density-map.pdf}
-\caption{Population density from eight blurred city impulses on $[0,100]^2$.
-A disk has radius $R=10$.
-Darker ink is higher density.}
-\label{fig:density}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{figures/sampled-houses.pdf}
-\caption{$10\,000$ houses after rounding to integer coordinates on the side-$100$ map.}
-\label{fig:houses}
-\end{figure}
+\begin{tabular}{@{}c@{\hspace{1.2em}}c@{}}
+\subfloat[Integer houses on the side-$100$ map.]{%
+\includegraphics[width=0.38\textwidth]{figures/sampled-houses.pdf}%
+\label{fig:houses}}
+&
+\subfloat[Tabu placement after $120$\,s ($9117$ covered).]{%
+\includegraphics[width=0.38\textwidth]{figures/placement-tabu.pdf}%
+\label{fig:placement}}
+\\[0.6em]
+\subfloat[Same disks on all $10\,000$ houses.]{%
+\includegraphics[width=0.38\textwidth]{figures/placement-tabu-houses.pdf}%
+\label{fig:placement-houses}}
+&
+\subfloat[Best-so-far uncovered count ($896$ vs $883$).]{%
+\includegraphics[width=0.38\textwidth]{figures/cost-best.pdf}%
+\label{fig:cost-best}}
+\end{tabular}
+\caption{Houses, submitted tabu disks of radius $R=10$, and the $120$\,s comparison.
+In (b), filled markers are covered cells (area $\propto$ household count) and open markers are uncovered.}
+\label{fig:results}
+\end{figure*}
 
 \section{Method}
 
 The assignment requires one self-written local-search algorithm, not a solver library.
-Late-acceptance hill-climbing~\cite{Burke2017} did not beat multi-start hill-climbing on this neighbourhood: a short history freezes, and a random-neighbour walk is a weaker climber than a full-pass first-improvement scan.
-We therefore switch to tabu search~\cite{Glover1989}.
-
-The baseline is unchanged: naive first-improvement hill-climbing until a full neighbourhood pass finds no improving move, then a new random $K$-subset, for a two-minute budget.
+Late-acceptance hill-climbing~\cite{Burke2017} did not beat multi-start hill-climbing on this neighbourhood, so we switch to tabu search~\cite{Glover1989}.
+The baseline is naive first-improvement hill-climbing until a full neighbourhood pass finds no improving move, then a new random $K$-subset, for a two-minute budget.
 Tabu search gets the same wall-clock.
 
 \subsection{Domain}
 
 A solution is a list of $K$ candidate centres, without repetition.
-The candidate set is the snapped $O(N^2)$ radius-$R$ centres of Section~II.
+The candidate set is the snapped $O(N^2)$ radius-$R$ centres of Section~I.
 
 \subsection{Evaluation}
 
@@ -120,67 +111,28 @@ Lower is better, matching the lecture's acceptance tests.
 
 \subsection{Move}
 
-A neighbour is obtained by replacing one chosen centre with a different candidate.
-That is a $K$-swap in the snapped candidate set.
+A neighbour replaces one chosen centre with a different candidate: a $1$-swap in the snapped candidate set.
 
 \subsection{Algorithm}
 
-Tabu search starts from a random $K$-subset of the snapped candidates.
+Tabu search starts from a random $K$-subset.
 It first climbs with first-improvement: slots in random order, and on the first slot that has a better centre, the best unused candidate for that slot is taken.
 A sparse candidate-by-house matrix makes that scan cheap (about $7$\,ms for all $11822$ centres).
 From the local minimum, each further step takes the lowest-cost admissible $1$-swap over the whole neighbourhood.
 The centre just evicted may not return for a tenure of $12$ steps, unless the swap beats the global best (aspiration).
 If the global best is unchanged for $80$ tabu steps, we restart from a new random $K$-subset.
-
 Naive hill-climbing is the same neighbourhood with no memory and with random restarts until the time budget expires.
 
-\section{A first timed comparison}
+\section{A timed comparison}
 
 Both methods received $120$\,s on the $N=10\,000$, $K=12$, $R=10$ map ($3148$ distinct cells, $11822$ snapped candidates).
 Naive multi-start hill-climbing covered $9104$ houses after $6$ local minima.
 Tabu search covered $9117$ houses after $197$ restarts ($3715$ climbing steps and $16016$ tabu steps).
-The same neighbourhood evaluated by applying each swap in Python took about $4$\,s per full scan, which is why an earlier sampled tabu lost to the baseline.
-With the sparse evaluation, tabu sees the whole $1$-swap list and still restarts far more often than the naive climber.
+Evaluating each swap in Python took about $4$\,s per full scan; with the sparse matrix, tabu sees the whole $1$-swap list and still restarts far more often than the naive climber.
 An integer program on the $11822$ candidates did not return a feasible incumbent within $60$\,s, so $9117$ is the best-known value on this run.
-Fig.~\ref{fig:placement} is the tabu placement on the integer houses.
-Fig.~\ref{fig:placement-houses} shows the same disks on all $10\,000$ points.
-Fig.~\ref{fig:cost-current} shows the current cost against wall-clock time.
-Fig.~\ref{fig:cost-best} shows the best cost so far.
-Late-acceptance hill-climbing is not competitive on this neighbourhood and is not the submitted method.
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{figures/placement-tabu.pdf}
-\caption{Best tabu-search placement after $120$\,s ($9117$ houses covered).
-Filled markers are covered integer locations (area scales with household count); open markers are uncovered.
-Circles have radius $R=10$.}
-\label{fig:placement}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{figures/placement-tabu-houses.pdf}
-\caption{The same $12$ disks on the $10\,000$ sampled houses (integer coordinates).
-Covered houses are the dense clouds; uncovered houses are the hinterland dots.}
-\label{fig:placement-houses}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{figures/cost-current.pdf}
-\caption{Current number of uncovered houses against wall-clock time.
-Top: naive hill-climbing.
-Bottom: tabu search.}
-\label{fig:cost-current}
-\end{figure}
-
-\begin{figure}[!t]
-\centering
-\includegraphics[width=\columnwidth]{figures/cost-best.pdf}
-\caption{Best-so-far uncovered count for both methods.
-Hill-climbing ends at $896$ uncovered houses, tabu search at $883$.}
-\label{fig:cost-best}
-\end{figure}
+Fig.~\ref{fig:results} shows the houses, the tabu disks, and the best-so-far cost traces.
+Late-acceptance hill-climbing is not the submitted method.
+Code and instances: \url{https://github.com/KrisjanisP/disk-coverage-optimization-homework}.
 
 \bibliographystyle{IEEEtran}
 \bibliography{refs}
